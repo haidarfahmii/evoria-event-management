@@ -1,0 +1,187 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  ORGANIZER
+}
+
+enum TransactionStatus {
+  WAITING_PAYMENT
+  PAID
+  CANCELLED
+  EXPIRED
+}
+
+model User {
+  id       String  @id @default(cuid()) 
+  name     String
+  email    String  @unique
+  password String
+  role     Role    @default(CUSTOMER)
+  avatarUrl String?
+  
+  // Referral System
+  referralCode     String  @unique 
+  referredByUserId String? 
+  referredBy       User?   @relation("UserReferrals", fields: [referredByUserId], references: [id])
+  referrals        User[]  @relation("UserReferrals")
+
+  // Relations
+  events       Event[]       @relation("OrganizerEvents")
+  reviews      Review[]
+  transactions Transaction[]
+  points       Point[]
+  coupons      Coupon[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Event {
+  id             String   @id @default(cuid()) 
+  name           String
+  description    String   @db.Text
+  price          Int      
+  date           DateTime 
+  location       String
+  availableSeats Int
+  
+  // Organizer link
+  organizerId String   
+  organizer   User     @relation("OrganizerEvents", fields: [organizerId], references: [id])
+
+  // Categorization
+  categoryId String   
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  // Relations
+  reviews      Review[]
+  transactions Transaction[]
+  promotions   Promotion[] 
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime? 
+
+  @@map("events")
+}
+
+model Category {
+  id     String  @id @default(cuid()) 
+  name   String  @unique 
+  events Event[]
+
+  @@map("categories")
+}
+
+model Review {
+  id      String  @id @default(cuid()) 
+  rating  Int      
+  comment String? @db.Text
+  
+  userId String   
+  user   User     @relation(fields: [userId], references: [id])
+  
+  eventId String  
+  event   Event   @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("reviews")
+}
+
+model Coupon {
+  id         String   @id @default(cuid()) 
+  userId     String   
+  user       User     @relation(fields: [userId], references: [id])
+  
+  code       String   
+  percentage Int      @default(10) 
+  isUsed     Boolean  @default(false)
+  expiresAt  DateTime 
+
+  transactions Transaction[] 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("coupons")
+}
+
+model Point {
+  id         String   @id @default(cuid()) 
+  userId     String   
+  user       User     @relation(fields: [userId], references: [id])
+  
+  amount     Int      @default(10000)
+  isRedeemed Boolean  @default(false) 
+  expiresAt  DateTime 
+
+  createdAt DateTime @default(now())
+
+  @@map("points")
+}
+
+model Promotion {
+  id        String   @id @default(cuid()) 
+  eventId   String 
+  event     Event    @relation(fields: [eventId], references: [id])
+  
+  code      String   @unique 
+  type      String   
+  value     Int      
+  maxUsage  Int?      
+  startDate DateTime
+  endDate   DateTime
+
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("promotions")
+}
+
+model Transaction {
+  id         String   @id @default(cuid()) 
+  userId     String   
+  user       User     @relation(fields: [userId], references: [id])
+  
+  eventId    String   
+  event      Event    @relation(fields: [eventId], references: [id])
+  
+  qty        Int      @default(1)
+  totalPrice Int      
+  
+  // Discount Logic
+  pointsUsed  Int     @default(0) 
+  couponId    String? 
+  coupon      Coupon? @relation(fields: [couponId], references: [id])
+  promotionId String? 
+  promotion   Promotion? @relation(fields: [promotionId], references: [id])
+
+  finalPrice Int      
+  
+  status    TransactionStatus @default(WAITING_PAYMENT)
+  snapToken String?           
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("transactions")
+}
