@@ -82,14 +82,6 @@ model Event {
   @@map("events")
 }
 
-model Category {
-  id     String  @id @default(cuid()) 
-  name   String  @unique 
-  events Event[]
-
-  @@map("categories")
-}
-
 model Review {
   id      String  @id @default(cuid()) 
   rating  Int      
