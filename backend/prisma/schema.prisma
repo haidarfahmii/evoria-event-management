@@ -11,6 +11,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -53,21 +55,20 @@ model User {
 }
 
 model Event {
-  id             String   @id @default(cuid()) 
-  name           String
-  description    String   @db.Text
-  price          Int      
-  date           DateTime 
-  location       String
-  availableSeats Int
+  id                String   @id @default(cuid()) 
+  name              String
+  description       String   @db.Text
+  price             Int      
+  date              DateTime 
+  city              String
+  venue             String
+  availableSeats    Int
+  category          String
   
   // Organizer link
   organizerId String   
   organizer   User     @relation("OrganizerEvents", fields: [organizerId], references: [id])
 
-  // Categorization
-  categoryId String   
-  category   Category @relation(fields: [categoryId], references: [id])
 
   // Relations
   reviews      Review[]
