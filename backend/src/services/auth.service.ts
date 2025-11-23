@@ -8,7 +8,7 @@ import { AuthResponse, LoginInput, RegisterInput } from "../@types";
 
 export const authService = {
   async register(input: RegisterInput): Promise<void> {
-    const { name, email, password, referralCode } = input;
+    const { name, email, password, role, referralCode } = input;
 
     // cek jika user sudah ada
     const existingUser = await prisma.user.findUnique({
@@ -59,6 +59,9 @@ export const authService = {
       }
     }
 
+    // tentukan role (default CUSTOMER)
+    const finalRole = role === Role.ORGANIZER ? Role.ORGANIZER : Role.CUSTOMER;
+
     // create user dengan transaction
     await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -66,7 +69,7 @@ export const authService = {
           name,
           email,
           password: hashedPassword,
-          role: Role.CUSTOMER,
+          role: finalRole,
           referralCode: newReferralCode,
           referredByUserId,
         },

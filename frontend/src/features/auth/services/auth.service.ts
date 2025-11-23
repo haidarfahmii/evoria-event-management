@@ -7,6 +7,7 @@ export const authService = {
       name: data.name,
       email: data.email,
       password: data.password,
+      role: data.role,
       referralCode: data.referralCode || undefined,
     });
     return response.data;

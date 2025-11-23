@@ -3,7 +3,7 @@ import { authService } from "../services/auth.service";
 
 export const authController = {
   async register(req: Request, res: Response) {
-    const { name, email, password, referralCode } = req.body;
+    const { name, email, password, role, referralCode } = req.body;
 
     // validasi
     if (!name || !email || !password) {
@@ -12,7 +12,7 @@ export const authController = {
         message: "name, email, and password is required",
       });
     }
-    await authService.register({ name, email, password, referralCode });
+    await authService.register({ name, email, password, role, referralCode });
 
     res.status(201).json({
       success: true,

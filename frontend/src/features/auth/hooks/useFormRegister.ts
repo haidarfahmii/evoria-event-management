@@ -3,6 +3,7 @@ import { registerValidationSchema } from "../schemas/authValidationSchema";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authService } from "../services/auth.service";
+import { Role } from "@/@types";
 
 export default function useFormRegister() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function useFormRegister() {
       name: "",
       email: "",
       password: "",
+      role: Role.CUSTOMER,
       referralCode: "",
       acceptTerms: false,
     },

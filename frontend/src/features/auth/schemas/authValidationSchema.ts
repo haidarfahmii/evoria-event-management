@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import { Role } from "@/@types";
 
 export const registerValidationSchema = Yup.object().shape({
   name: Yup.string().required("Name is required"),
@@ -10,6 +11,9 @@ export const registerValidationSchema = Yup.object().shape({
       "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     )
     .required("Password is required"),
+  role: Yup.string()
+    .oneOf([Role.CUSTOMER, Role.ORGANIZER], "Invalid role selection")
+    .required("Role is required"),
   referralCode: Yup.string().optional(),
   acceptTerms: Yup.boolean()
     .oneOf([true], "You must accept the terms and conditions") // Wajib true
