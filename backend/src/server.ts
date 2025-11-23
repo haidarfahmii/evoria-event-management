@@ -12,9 +12,9 @@ const app: Express = express();
 app.use(corsOptions);
 app.use(express.json());
 
-app.get("/", (_req: Request, res: Response) => {
-  res.send("Travel App API is Running 🚀");
-});
+// app.get("/", (_req: Request, res: Response) => {
+//   res.send("Travel App API is Running 🚀");
+// });
 
 app.use("/api/auth", authRouter);
 

@@ -8,7 +8,7 @@ dotenv.config({
 // JWT
 export const JWT_SECRET_KEY_AUTH =
   process.env.JWT_SECRET_KEY_AUTH || "purwadhika-mini-project-evoria-jcwdbsd36";
-export const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "1d") as string;
+export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1d";
 
 // WHITELIST
 export const WHITELIST = [process.env.WHITELIST || "http://localhost:3000"];
