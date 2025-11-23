@@ -1,8 +1,8 @@
 import { useFormik } from "formik";
 import { registerValidationSchema } from "../schemas/authValidationSchema";
-import axiosInstance from "@/utils/axiosInstance";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { authService } from "../services/auth.service";
 
 export default function useFormRegister() {
   const router = useRouter();
@@ -15,13 +15,19 @@ export default function useFormRegister() {
       email: "",
       password: "",
       referralCode: "",
+      acceptTerms: false,
     },
     validationSchema: registerValidationSchema,
     onSubmit: async (values) => {
-      setIsLoading(true);
-      setErrorMsg("");
       try {
-        await axiosInstance.post("/auth/register", values);
+        setIsLoading(true);
+        setErrorMsg("");
+
+        // memisahkan accpetTerms dari payload yang dikirim ke backend
+        const { acceptTerms, ...payload } = values;
+        // kirim data yang dibutuhkan backend (name, email, password, referralCode)
+        await authService.register(payload);
+
         alert("Registration successful! Please login.");
         router.push("/login");
       } catch (error: any) {

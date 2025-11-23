@@ -1,11 +1,12 @@
 "use client";
+
+import Link from "next/link";
 import useFormLogin from "../hooks/useFormLogin";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { Loader2 } from "lucide-react";
+import FormInput from "./FormInput";
 
 export default function LoginForm() {
   const { formik, isLoading, errorMsg } = useFormLogin();
@@ -19,64 +20,38 @@ export default function LoginForm() {
       )}
 
       <form onSubmit={formik.handleSubmit} className="space-y-4">
-        <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            placeholder="name@example.com"
-            type="email"
-            autoCapitalize="none"
-            autoComplete="email"
-            autoCorrect="off"
-            disabled={isLoading}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            value={formik.values.email}
-            className={
-              formik.touched.email && formik.errors.email
-                ? "border-red-500"
-                : ""
-            }
-          />
-          {formik.touched.email && formik.errors.email && (
-            <p className="text-xs text-red-500">{formik.errors.email}</p>
-          )}
-        </div>
+        <FormInput
+          name="email"
+          label="Email"
+          type="email"
+          placeholder="name@example.com"
+          formik={formik}
+          disabled={isLoading}
+        />
 
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <a href="#" className="text-xs text-slate-400 hover:underline">
+        <div className="space-y-1">
+          <div className="flex items-center justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-slate-600 hover:underline font-medium"
+            >
               Forgot password?
-            </a>
+            </Link>
           </div>
-          <Input
-            id="password"
+          <FormInput
             name="password"
-            placeholder="••••••••"
+            label="Password"
             type="password"
-            autoCapitalize="none"
-            autoComplete="current-password"
+            placeholder="••••••••"
+            formik={formik}
             disabled={isLoading}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            value={formik.values.password}
-            className={
-              formik.touched.password && formik.errors.password
-                ? "border-red-500"
-                : ""
-            }
           />
-          {formik.touched.password && formik.errors.password && (
-            <p className="text-xs text-red-500">{formik.errors.password}</p>
-          )}
         </div>
 
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
         >
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign In

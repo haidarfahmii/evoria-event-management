@@ -5,8 +5,15 @@ export const registerValidationSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string()
     .min(6, "Password must be at least 6 chars")
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+    )
     .required("Password is required"),
   referralCode: Yup.string().optional(),
+  acceptTerms: Yup.boolean()
+    .oneOf([true], "You must accept the terms and conditions") // Wajib true
+    .required("You must accept the terms and conditions"),
 });
 
 export const loginValidationSchema = Yup.object().shape({

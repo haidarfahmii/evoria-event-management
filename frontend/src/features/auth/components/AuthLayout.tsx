@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ReactNode } from "react";
+import { FaChevronLeft } from "react-icons/fa";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -54,7 +55,15 @@ export default function AuthLayout({
       </div>
 
       {/* Right Side - Form */}
-      <div className="flex w-full lg:w-1/2 flex-col items-center justify-center p-8 lg:p-12">
+      <div className="flex w-full lg:w-1/2 flex-col items-center justify-center p-8 lg:p-12 relative">
+        {/* --- Tombol back to home --- */}
+        <Link
+          href="/"
+          className="absolute top-8 left-8 md:top-12 md:left-12 flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50 transition-colors"
+        >
+          <FaChevronLeft className="w-4 h-4" />
+          Back to Home
+        </Link>
         <div className="mx-auto w-full max-w-[400px] space-y-6">
           <div className="space-y-2 text-center lg:text-left">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
