@@ -1,6 +1,6 @@
 import { useFormik } from "formik";
 import { loginValidationSchema } from "../schemas/authValidationSchema";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -29,7 +29,15 @@ export default function useFormLogin() {
         setErrorMsg(res.error);
         setIsLoading(false);
       } else {
-        router.push("/dashboard"); // Redirect after login
+        // ambil session terbaru untuk cek role
+        const session = await getSession();
+
+        // cek role dan redirect sesuai hak aksesnya
+        if (session?.user?.role === "ORGANIZER") {
+          router.push("/dashboard");
+        } else {
+          router.push("/");
+        }
       }
     },
   });

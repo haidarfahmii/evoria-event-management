@@ -30,12 +30,24 @@ const nextAuthHandler = NextAuth({
             {
               headers: {
                 "next-auth-secret-key":
+                  process.env.NEXT_AUTH_SECRET_KEY ||
                   "purwadhika-mini-project-evoria-jcwdbsd36",
               },
             }
           );
 
-          const { user, token } = response.data;
+          console.log("✅ Login Response:", response.data);
+
+          // ✅ PERBAIKAN: Akses nested data
+          const apiResponse = response.data;
+
+          // Cek apakah response sukses
+          if (!apiResponse.success || !apiResponse.data) {
+            console.error("❌ Invalid response structure");
+            return null;
+          }
+
+          const { user, token } = apiResponse.data;
 
           if (user && token) {
             // TypeScript tidak akan error di sini karena interface User
@@ -50,10 +62,12 @@ const nextAuthHandler = NextAuth({
           }
           return null;
         } catch (error: any) {
+          console.error("❌ Login Error:", error.response?.data);
+
           const axiosError = error as AxiosError<{ message: string }>;
-          throw new Error(
-            axiosError.response?.data?.message || "Something went wrong"
-          );
+          const errorMessage =
+            axiosError.response?.data?.message || "Something went wrong";
+          throw new Error(errorMessage);
         }
       },
     }),
@@ -88,6 +102,7 @@ const nextAuthHandler = NextAuth({
     strategy: "jwt",
     maxAge: 24 * 60 * 60,
   },
+  secret: process.env.NEXTAUTH_SECRET,
 });
 
 export { nextAuthHandler as GET, nextAuthHandler as POST };

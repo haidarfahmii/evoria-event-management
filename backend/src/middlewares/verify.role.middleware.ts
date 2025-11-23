@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { Role } from "../generated/prisma/client";
 
 export function verifyRole(acceptedRoles: Role[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const payload = res?.locals?.payload;
+  return (_req: Request, res: Response, next: NextFunction) => {
+    const payload = res?.locals?.user;
 
     // cek apakah payload ada
     if (!payload) {
@@ -13,7 +13,7 @@ export function verifyRole(acceptedRoles: Role[]) {
     }
 
     // cek role
-    if (!acceptedRoles.includes(payload.role)) {
+    if (acceptedRoles.includes(payload.role)) {
       next(); // lolos -> lanjut ke controller
     } else {
       const error: any = new Error("Forbidden: You don't have access");
