@@ -16,16 +16,21 @@ const nextAuthHandler = NextAuth({
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
+        rememberMe: { label: "Remember Me", type: "text" },
       },
       async authorize(credentials, _) {
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
+          // parse boolean dari string karena credentials selalu string
+          const isRememberMe = credentials.rememberMe === "true";
+
           const response = await axiosInstance.post<AuthResponse>(
             "/auth/login",
             {
               email: credentials.email,
               password: credentials.password,
+              rememberMe: isRememberMe,
             },
             {
               headers: {
@@ -36,14 +41,14 @@ const nextAuthHandler = NextAuth({
             }
           );
 
-          console.log("✅ Login Response:", response.data);
+          console.log("Login Response:", response.data);
 
-          // ✅ PERBAIKAN: Akses nested data
+          // PERBAIKAN: Akses nested data
           const apiResponse = response.data;
 
           // Cek apakah response sukses
           if (!apiResponse.success || !apiResponse.data) {
-            console.error("❌ Invalid response structure");
+            console.error("Invalid response structure");
             return null;
           }
 
@@ -62,7 +67,7 @@ const nextAuthHandler = NextAuth({
           }
           return null;
         } catch (error: any) {
-          console.error("❌ Login Error:", error.response?.data);
+          console.error("Login Error:", error.response?.data);
 
           const axiosError = error as AxiosError<{ message: string }>;
           const errorMessage =
@@ -100,7 +105,7 @@ const nextAuthHandler = NextAuth({
   },
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60,
+    maxAge: 7 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
 });

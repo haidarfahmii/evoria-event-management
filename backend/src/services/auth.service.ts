@@ -1,10 +1,16 @@
 import { prisma } from "../config/prisma.config";
 import bcrypt from "bcrypt";
 import { createToken } from "../utils/jwt.util";
-import { JWT_SECRET_KEY_AUTH } from "../config/index.config";
+import {
+  JWT_SECRET_KEY_AUTH,
+  JWT_EXPIRES_IN,
+  JWT_EXPIRES_IN_REMEMBER_ME,
+} from "../config/index.config";
 import { generateReferralCode } from "../utils/referral.util";
 import { Role } from "../generated/prisma/client";
 import { AuthResponse, LoginInput, RegisterInput } from "../@types";
+import crypto from "crypto";
+import { transporter } from "../config/nodemailer.config";
 
 export const authService = {
   async register(input: RegisterInput): Promise<void> {
@@ -100,7 +106,7 @@ export const authService = {
   },
 
   async login(input: LoginInput): Promise<AuthResponse> {
-    const { email, password } = input;
+    const { email, password, rememberMe } = input;
 
     // find user by email
     const findUser = await prisma.user.findUnique({
@@ -118,6 +124,9 @@ export const authService = {
       throw new Error("Email or password is invalid");
     }
 
+    // tentukan durasi token
+    const expiresIn = rememberMe ? JWT_EXPIRES_IN_REMEMBER_ME : JWT_EXPIRES_IN;
+
     // create token
     const token = await createToken(
       {
@@ -127,7 +136,7 @@ export const authService = {
       },
       JWT_SECRET_KEY_AUTH,
       {
-        expiresIn: "1d",
+        expiresIn: expiresIn,
       }
     );
 
@@ -140,5 +149,68 @@ export const authService = {
         role: findUser?.role,
       },
     };
+  },
+
+  async forgotPassword(email: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Generate Token Random
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 3600000); // Expire dalam 1 jam
+
+    // Simpan token ke DB
+    await prisma.user.update({
+      where: { email },
+      data: {
+        resetPasswordToken: token,
+        resetPasswordExpiresAt: expiresAt,
+      },
+    });
+
+    // Kirim Email Link Reset Password
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+
+    await transporter.sendMail({
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: "Reset Your Password - Evoria Event",
+      html: `
+        <h3>Password Reset Request</h3>
+        <p>Click the link below to reset your password. This link expires in 1 hour.</p>
+        <a href="${resetLink}">${resetLink}</a>
+        <p>If you didn't request this, please ignore this email.</p>
+      `,
+    });
+  },
+
+  async resetPassword(token: string, newPassword: string) {
+    // Cari user berdasarkan token dan cek apakah token belum expired
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpiresAt: { gt: new Date() }, // Token harus expire > waktu sekarang
+      },
+    });
+
+    if (!user) {
+      throw new Error("Invalid or expired token");
+    }
+
+    // Hash password baru
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password dan hapus token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpiresAt: null,
+      },
+    });
   },
 };

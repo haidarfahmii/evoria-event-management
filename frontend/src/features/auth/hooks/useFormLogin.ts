@@ -13,6 +13,7 @@ export default function useFormLogin() {
     initialValues: {
       email: "",
       password: "",
+      rememberMe: false,
     },
     validationSchema: loginValidationSchema,
     onSubmit: async (values) => {
@@ -22,6 +23,7 @@ export default function useFormLogin() {
       const res = await signIn("credentials", {
         email: values.email,
         password: values.password,
+        rememberMe: values.rememberMe,
         redirect: false,
       });
 

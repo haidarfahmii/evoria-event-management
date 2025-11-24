@@ -3,6 +3,7 @@
 import Link from "next/link";
 import useFormLogin from "../hooks/useFormLogin";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { Loader2 } from "lucide-react";
@@ -29,23 +30,42 @@ export default function LoginForm() {
           disabled={isLoading}
         />
 
-        <div className="space-y-1">
+        <FormInput
+          name="password"
+          label="Password"
+          type="password"
+          placeholder="••••••••"
+          formik={formik}
+          disabled={isLoading}
+        />
+
+        <div className="flex items-center justify-between">
+          {/* Remember Me Checkbox */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="rememberMe"
+              checked={formik.values.rememberMe}
+              onCheckedChange={(checked) =>
+                formik.setFieldValue("rememberMe", checked)
+              }
+              disabled={isLoading}
+            />
+            <label
+              htmlFor="rememberMe"
+              className="text-sm font-medium leading-none cursor-pointer text-slate-700 dark:text-slate-300"
+            >
+              Remember me
+            </label>
+          </div>
+
           <div className="flex items-center justify-end">
             <Link
               href="/forgot-password"
-              className="text-xs text-slate-600 hover:underline font-medium"
+              className="text-xs text-slate-600 hover:underline font-medium dark:text-slate-400"
             >
               Forgot password?
             </Link>
           </div>
-          <FormInput
-            name="password"
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            formik={formik}
-            disabled={isLoading}
-          />
         </div>
 
         <Button

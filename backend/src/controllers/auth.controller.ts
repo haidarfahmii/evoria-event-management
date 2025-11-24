@@ -25,14 +25,36 @@ export const authController = {
   },
 
   async login(req: Request, res: Response) {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
-    const user = await authService.login({ email, password });
+    const user = await authService.login({ email, password, rememberMe });
 
     res.status(200).json({
       success: true,
       message: "Login successfully",
       data: user,
+    });
+  },
+
+  async forgotPassword(req: Request, res: Response) {
+    const { email } = req.body;
+
+    await authService.forgotPassword(email);
+
+    res.status(200).json({
+      success: true,
+      message: "Reset link sent to email",
+    });
+  },
+
+  async resetPassword(req: Request, res: Response) {
+    const { token, password } = req.body;
+
+    await authService.resetPassword(token, password);
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
     });
   },
 };
