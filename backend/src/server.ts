@@ -22,11 +22,16 @@ app.use("/api/auth", authRouter);
   Middleware (Application Level)
 */
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error("Error:", err.message);
+  const statusCode = err?.statusCode ? err?.statusCode : 500;
+  const message = err?.isOperational ? err?.message : "Something went wrong!";
 
-  res.status(err.statusCode || 500).json({
+  // Log error untuk debugging di server
+  console.error("❌ Error:", err);
+
+  res.status(statusCode).json({
     success: false,
-    message: err.message || "Something went wrong!",
+    message,
+    data: null,
   });
 });
 
