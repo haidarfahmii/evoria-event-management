@@ -1,13 +1,16 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
+import eventsRouter from "./routers/events.route";
 
 dotenv.config();
 
 const app: Express = express();
 app.use(express.json());
 
+app.use('/api/events', eventsRouter)
+
 app.get("/", (_req: Request, res: Response) => {
-  res.send("Travel App API is Running 🚀");
+  res.send("Evoria Event Management API is Running 🚀");
 });
 
 /*
