@@ -21,26 +21,35 @@ enum Role {
 }
 
 enum TransactionStatus {
-  WAITING_PAYMENT
-  PAID
-  CANCELLED
-  EXPIRED
+  WAITING_PAYMENT       // User belum upload bukti pembayaran
+  WAITING_CONFIRMATION  // user sudah upload, menunggu persetujuan organizer
+  DONE                  // disetujui organizer
+  REJECTED              // ditolak organizer
+  CANCELLED             // expired karena > 2 jam belum upload paymentproof
+  EXPIRED               // cancelled karena organizer tidak konfirmasi
 }
 
 model User {
-  id       String  @id @default(cuid()) 
+  id       String  @id @default(cuid())
   name     String
   email    String  @unique
   password String
   role     Role    @default(CUSTOMER)
   avatarUrl String?
 
+  // Reset Password Fields
   resetPasswordToken   String?
   resetPasswordExpiresAt DateTime?
-  
+
+  // Login Tracking Fields
+  lastLoginAt             DateTime? // Track kapan terakhir login
+  lastLoginIp             String?   // Track dari IP mana
+  loginCount              Int       @default(0) // Track berapa kali login
+
   // Referral System
-  referralCode     String  @unique 
-  referredByUserId String? 
+  referralCode     String  @unique
+  referredByUserId String?
+  // *** Self-relation yang benar
   referredBy       User?   @relation("UserReferrals", fields: [referredByUserId], references: [id])
   referrals        User[]  @relation("UserReferrals")
 
@@ -48,100 +57,129 @@ model User {
   events       Event[]       @relation("OrganizerEvents")
   reviews      Review[]
   transactions Transaction[]
-  points       Point[]
-  coupons      Coupon[]
-  
+  points       Point[]       // History perolehan poin
+  coupons      Coupon[]      // Kupon diskon dari referral (System wide)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?       // support soft delete (suspend user)
 
   @@map("users")
 }
 
 model Event {
-  id                String   @id @default(cuid()) 
-  name              String
-  description       String   @db.Text
-  price             Int      
-  date              DateTime 
+  id             String   @id @default(cuid())
+  name           String
+  description    String   @db.Text
+  category		 String
+  imageUrl	     String
+  
+  startDate      DateTime 
+  endDate        DateTime 
+  
   city              String
   venue             String
-  availableSeats    Int
-  category          String
   
-  // Organizer link
-  organizerId String   
-  organizer   User     @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  ticketTypes    TicketType[] 
 
+  organizerId String
+  organizer   User   @relation("OrganizerEvents", fields: [organizerId], references: [id])
 
-  // Relations
   reviews      Review[]
   transactions Transaction[]
-  promotions   Promotion[] 
-  
+  promotions   Promotion[] // Voucher dari organizer
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  deletedAt DateTime? 
+  deletedAt DateTime?   // support soft delete (event cancelled/removed)
 
   @@map("events")
 }
 
-model Review {
-  id      String  @id @default(cuid()) 
-  rating  Int      
-  comment String? @db.Text
+// Mengakomodasi "Ticket Types (if applicable)"
+model TicketType {
+  id        String  @id @default(cuid())
+  name      String  // e.g. "VIP", "Presale"
+  price     Int
+  seats     Int     // Kuota per tipe tiket
   
-  userId String   
-  user   User     @relation(fields: [userId], references: [id])
+  eventId   String
+  event     Event   @relation(fields: [eventId], references: [id])
   
-  eventId String  
-  event   Event   @relation(fields: [eventId], references: [id])
+  transactions Transaction[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@map("ticket_types")
+}
+
+model Review {
+  id      String  @id @default(cuid())
+  rating  Int
+  comment String? @db.Text
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
   @@map("reviews")
 }
 
+// "Reward / Coupon Discount" (System provided, from Referral)
 model Coupon {
-  id         String   @id @default(cuid()) 
-  userId     String   
+  id         String   @id @default(cuid())
+  userId     String
   user       User     @relation(fields: [userId], references: [id])
-  
-  code       String   
-  percentage Int      @default(10) 
-  isUsed     Boolean  @default(false)
-  expiresAt  DateTime 
 
-  transactions Transaction[] 
+  code       String   // Unique code generated system
+  percentage Int      @default(10) // Requirement: discount coupon
+  isUsed     Boolean  @default(false)
+  expiresAt  DateTime // Requirement: 3 months validity
+
+  transactions Transaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft Delete jika kupon ditarik system
 
   @@map("coupons")
 }
 
 model Point {
-  id         String   @id @default(cuid()) 
-  userId     String   
+  id         String   @id @default(cuid())
+  userId     String
   user       User     @relation(fields: [userId], references: [id])
-  
-  amount     Int      @default(10000)
-  isRedeemed Boolean  @default(false) 
-  expiresAt  DateTime 
+
+  amount     Int      @default(10000) // Requirement: 10.000 points
+  expiresAt  DateTime // Requirement: 3 months validity
+  isRedeemed Boolean  @default(false) // True jika sudah dipakai semua? 
+                                      // *Note: Point ledger logic itu kompleks. 
+                                      // Cara paling mudah: Anggap ini history CREDIT (+). 
+                                      // Pengurangan (-) dihitung dari Transaction.pointsUsed.
 
   createdAt DateTime @default(now())
 
   @@map("points")
 }
 
+// "Voucher Discount" (Organizer provided)
 model Promotion {
-  id        String   @id @default(cuid()) 
-  eventId   String 
+  id        String   @id @default(cuid())
+  eventId   String
   event     Event    @relation(fields: [eventId], references: [id])
-  
-  code      String   @unique 
-  type      String   
-  value     Int      
-  maxUsage  Int?      
+
+  code      String   @unique
+  type      String   // FLAT or PERCENTAGE
+  value     Int
+  maxUsage  Int?
   startDate DateTime
   endDate   DateTime
 
@@ -149,32 +187,46 @@ model Promotion {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft Delete jika organizer stop promo
 
   @@map("promotions")
 }
 
 model Transaction {
-  id         String   @id @default(cuid()) 
-  userId     String   
-  user       User     @relation(fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
   
-  eventId    String   
-  event      Event    @relation(fields: [eventId], references: [id])
-  
-  qty        Int      @default(1)
-  totalPrice Int      
-  
+  // *** UPDATED: Link ke TicketType
+  ticketTypeId String?
+  ticketType   TicketType? @relation(fields: [ticketTypeId], references: [id])
+
+  qty         Int      @default(1)
+  totalPrice  Int      // Harga tiket * qty
+
   // Discount Logic
-  pointsUsed  Int     @default(0) 
-  couponId    String? 
-  coupon      Coupon? @relation(fields: [couponId], references: [id])
-  promotionId String? 
+  pointsUsed  Int      @default(0)
+  
+  couponId    String?
+  coupon      Coupon?  @relation(fields: [couponId], references: [id])
+  
+  promotionId String?
   promotion   Promotion? @relation(fields: [promotionId], references: [id])
 
-  finalPrice Int      
+  finalPrice  Int
+
+  // *** UPDATED: Transaction Flow
+  status      TransactionStatus @default(WAITING_PAYMENT)
   
-  status    TransactionStatus @default(WAITING_PAYMENT)
-  snapToken String?           
+  // Requirement: "Payment Proof".
+  paymentProof String? // URL gambar bukti bayar
+  
+  // Requirement: 2 jam countdown & 3 hari admin response
+  // Kita butuh timestamp kapan user upload bukti bayar untuk hitung 3 hari admin.
+  paymentProofUploadedAt DateTime? 
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
