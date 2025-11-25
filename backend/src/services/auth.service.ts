@@ -11,6 +11,7 @@ import { Role } from "../generated/prisma/client";
 import { AuthResponse, LoginInput, RegisterInput } from "../@types";
 import crypto from "crypto";
 import { transporter } from "../config/nodemailer.config";
+import { Request } from "express";
 
 export const authService = {
   async register(input: RegisterInput): Promise<void> {
@@ -51,7 +52,10 @@ export const authService = {
     let newReferralCode = generateReferralCode();
     let isUnique = false;
 
-    while (!isUnique) {
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    while (!isUnique && attempts < maxAttempts) {
       const existing = await prisma.user.findUnique({
         where: {
           referralCode: newReferralCode,
@@ -62,7 +66,12 @@ export const authService = {
         isUnique = true;
       } else {
         newReferralCode = generateReferralCode();
+        attempts++;
       }
+    }
+
+    if (!isUnique) {
+      throw new Error("Failed to generate unique referral code");
     }
 
     // tentukan role (default CUSTOMER)
@@ -105,7 +114,7 @@ export const authService = {
     });
   },
 
-  async login(input: LoginInput): Promise<AuthResponse> {
+  async login(input: LoginInput, req: Request): Promise<AuthResponse> {
     const { email, password, rememberMe } = input;
 
     // find user by email
@@ -134,11 +143,26 @@ export const authService = {
         role: findUser?.role,
         email: findUser?.email,
       },
-      JWT_SECRET_KEY_AUTH,
+      JWT_SECRET_KEY_AUTH!,
       {
-        expiresIn: expiresIn,
+        expiresIn,
       }
     );
+
+    // login tracking
+    const clientIp = this.getClientIp(req);
+    await prisma.user.update({
+      where: {
+        id: findUser?.id,
+      },
+      data: {
+        lastLoginAt: new Date(),
+        lastLoginIp: clientIp,
+        loginCount: {
+          increment: 1,
+        },
+      },
+    });
 
     return {
       token,
@@ -151,22 +175,44 @@ export const authService = {
     };
   },
 
+  // helper to get client IP
+  getClientIp(req: Request): string {
+    const forwarded = req.headers["x-forwarded-for"];
+    const realIp = req.headers["x-real-ip"];
+
+    if (forwarded) {
+      return typeof forwarded === "string"
+        ? forwarded.split(",")[0].trim()
+        : forwarded[0];
+    }
+
+    if (realIp) {
+      return typeof realIp === "string" ? realIp : realIp[0];
+    }
+
+    return req.socket.remoteAddress || "unknown";
+  },
+
   async forgotPassword(email: string) {
     const user = await prisma.user.findUnique({ where: { email } });
 
+    // Always return success (prevent email enumeration)
     if (!user) {
-      throw new Error("User not found");
+      console.log(`Password reset requested for non-existent user: ${email}`);
+      return;
     }
 
     // Generate Token Random
     const token = crypto.randomBytes(32).toString("hex");
+    // hash token sebelum storing
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const expiresAt = new Date(Date.now() + 3600000); // Expire dalam 1 jam
 
     // Simpan token ke DB
     await prisma.user.update({
       where: { email },
       data: {
-        resetPasswordToken: token,
+        resetPasswordToken: tokenHash,
         resetPasswordExpiresAt: expiresAt,
       },
     });
@@ -188,10 +234,12 @@ export const authService = {
   },
 
   async resetPassword(token: string, newPassword: string) {
+    // hash token untuk komparasi
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     // Cari user berdasarkan token dan cek apakah token belum expired
     const user = await prisma.user.findFirst({
       where: {
-        resetPasswordToken: token,
+        resetPasswordToken: tokenHash,
         resetPasswordExpiresAt: { gt: new Date() }, // Token harus expire > waktu sekarang
       },
     });
@@ -212,5 +260,21 @@ export const authService = {
         resetPasswordExpiresAt: null,
       },
     });
+
+    // send confirmation email
+    try {
+      await transporter.sendMail({
+        from: process.env.MAIL_USER,
+        to: user.email,
+        subject: "Password Changed Successfully - Evoria Event",
+        html: `
+          <h3>Password Changed</h3>
+          <p>Your password has been successfully changed.</p>
+          <p>If you didn't make this change, please contact support immediately.</p>
+        `,
+      });
+    } catch (error) {
+      console.error("Failed to send confirmation email:", error);
+    }
   },
 };

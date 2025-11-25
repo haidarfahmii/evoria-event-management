@@ -14,8 +14,8 @@ export const registerValidator = [
   body("password")
     .notEmpty()
     .withMessage("Password is required")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long")
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage(
       "Password must contain at least one uppercase letter, one lowercase letter, and one number"
@@ -43,4 +43,15 @@ export const forgotPasswordValidator = [
     .withMessage("Email is required")
     .isEmail()
     .withMessage("Invalid email format"),
+];
+
+export const resetPasswordValidator = [
+  body("token").notEmpty().withMessage("Reset token is required").isString(),
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long")
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage("Password must contain uppercase, lowercase, and number"),
 ];

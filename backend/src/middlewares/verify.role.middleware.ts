@@ -3,7 +3,7 @@ import { Role } from "../generated/prisma/client";
 
 export function verifyRole(acceptedRoles: Role[]) {
   return (_req: Request, res: Response, next: NextFunction) => {
-    const payload = res?.locals?.user;
+    const payload = res?.locals?.payload;
 
     // cek apakah payload ada
     if (!payload) {
