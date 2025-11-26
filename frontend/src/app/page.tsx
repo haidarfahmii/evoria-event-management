@@ -4,31 +4,13 @@ import { FiSearch, FiMapPin, FiFilter } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import EventCard from "@/components/EventCard";
 import axiosInstance from "@/utils/axios-instance";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-
+import categoriesData from "./../data/categoriesData.json"
+import citiesData from "./../data/citiesData.json"
 export default function Home() {
 
-  const categories = [
-    "All",
-    "Concert",
-    "Seminar",
-    "Workshop",
-    "Festival",
-    "Sport"
-  ];
+  const categories = categoriesData.categories;
 
-  const cities = [
-    "Bali",
-    "Bandung",
-    "Bekasi",
-    "Cirebon",
-    "Jakarta",
-    "Surabaya",
-    "Semarang",
-    "Tangerang",
-    "Palembang"
-  ]
+  const cities = citiesData.cities;
 
   const [events, setEvents] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -68,8 +50,6 @@ export default function Home() {
 
   return (
     <main>
-      {/* Navbar */}
-      <Navbar />
 
       {/* Hero section */}
       <section className="bg-blue-200">
@@ -122,6 +102,15 @@ export default function Home() {
               <FiFilter className="w-4 h-4 mr-1" />
               Filter by:
             </div>
+            <button
+              onClick={() => setSelectedCategory("All")}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === "All"
+                  ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
+                  : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
+                }`}
+            >
+              All
+            </button>
 
             {categories.map(cat => (
               <button
@@ -136,7 +125,6 @@ export default function Home() {
               >
                 {cat}
               </button>
-
             ))}
           </div>
         </div>
@@ -152,9 +140,6 @@ export default function Home() {
 
 
       </section>
-
-      {/* Footer */}
-      <Footer/>
 
     </main>
   );
