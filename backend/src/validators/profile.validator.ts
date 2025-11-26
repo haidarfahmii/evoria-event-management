@@ -7,10 +7,6 @@ export const updateProfileValidator = [
     .withMessage("Name must be a string")
     .isLength({ min: 3 })
     .withMessage("Name must be at least 3 characters long"),
-  body("avatarUrl")
-    .optional()
-    .isURL()
-    .withMessage("Avatar URL must be a valid URL"),
 ];
 
 export const changePasswordValidator = [
