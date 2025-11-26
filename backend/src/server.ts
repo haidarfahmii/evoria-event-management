@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { PORT } from "./config/index.config";
 import { corsOptions } from "./middlewares/cors.options.middleware";
 import authRouter from "./routers/auth.router";
+import profileRouter from "./routers/profile.router";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(express.json());
 // });
 
 app.use("/api/auth", authRouter);
+app.use("/api/profile", profileRouter);
 
 /*
   Middleware (Application Level)
