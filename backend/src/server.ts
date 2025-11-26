@@ -1,7 +1,7 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import eventsRouter from "./routers/events.route";
-import { corsOptions } from "./middleware/cors.options.middleware";
+import { corsOptions } from "./middlewares/cors.options.middleware";
 
 dotenv.config();
 
