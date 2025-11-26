@@ -17,7 +17,7 @@ const eventsController = {
             })
     },
 
-    async get(req: Request, res: Response) {
+    async getAll(req: Request, res: Response) {
         const events = await eventsService.get();
 
         res.status(201).json({
