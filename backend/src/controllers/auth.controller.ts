@@ -12,6 +12,7 @@ export const authController = {
         message: "name, email, and password is required",
       });
     }
+
     await authService.register({ name, email, password, role, referralCode });
 
     res.status(201).json({
@@ -27,7 +28,7 @@ export const authController = {
   async login(req: Request, res: Response) {
     const { email, password, rememberMe } = req.body;
 
-    const user = await authService.login({ email, password, rememberMe });
+    const user = await authService.login({ email, password, rememberMe }, req);
 
     res.status(200).json({
       success: true,

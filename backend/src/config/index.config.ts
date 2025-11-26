@@ -6,8 +6,7 @@ dotenv.config({
 });
 
 // JWT
-export const JWT_SECRET_KEY_AUTH =
-  process.env.JWT_SECRET_KEY_AUTH || "purwadhika-mini-project-evoria-jcwdbsd36";
+export const JWT_SECRET_KEY_AUTH = process.env.JWT_SECRET_KEY_AUTH;
 export const JWT_EXPIRES_IN = "1d";
 export const JWT_EXPIRES_IN_REMEMBER_ME = "7d";
 
