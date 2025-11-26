@@ -4,6 +4,7 @@ import { PORT } from "./config/index.config";
 import { corsOptions } from "./middlewares/cors.options.middleware";
 import authRouter from "./routers/auth.router";
 import profileRouter from "./routers/profile.router";
+import { MulterError } from "multer";
 
 dotenv.config();
 
@@ -29,6 +30,18 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
   // Log error untuk debugging di server
   console.error("❌ Error:", err);
+
+  // Multer Error
+  if (err instanceof MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      res.status(400).json({
+        success: false,
+        message: "File size is too large",
+        data: null,
+      });
+      return;
+    }
+  }
 
   res.status(statusCode).json({
     success: false,
