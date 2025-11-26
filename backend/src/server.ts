@@ -1,11 +1,13 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import eventsRouter from "./routers/events.route";
+import { corsOptions } from "./middleware/cors.options.middleware";
 
 dotenv.config();
 
 const app: Express = express();
 app.use(express.json());
+app.use(corsOptions);
 
 app.use('/api/events', eventsRouter)
 
