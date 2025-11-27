@@ -3,6 +3,11 @@ export enum Role {
   ORGANIZER = "ORGANIZER",
 }
 
+export enum Gender {
+  MALE = "MALE",
+  FEMALE = "FEMALE",
+}
+
 export interface RegisterFormValues {
   name: string;
   email: string;
@@ -22,6 +27,10 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  phoneNumber?: string;
+  birthDate?: string;
+  gender?: Gender;
+  avatarUrl?: string;
 }
 
 export interface AuthResponse {
