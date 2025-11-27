@@ -84,7 +84,7 @@ export default function EventsForm() {
             </div>
 
             {/* start date */}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
                 <label className="text-sm font-medium text-gray-700">Start Date</label>
 
                 <div className="relative w-full">
@@ -107,7 +107,7 @@ export default function EventsForm() {
             </div>
 
             {/* end date */}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
                 <label className="text-sm font-medium text-gray-700">End Date</label>
 
                 <div className="relative w-full">
@@ -270,7 +270,7 @@ export default function EventsForm() {
                     </div>
 
                     {/* Ticket Type Name */}
-                    <div>
+                    <div className="col-span-3 md:col-span-1">
                         <label className="text-sm font-medium text-gray-700">Type</label>
                         <input
                             type="text"
@@ -297,7 +297,7 @@ export default function EventsForm() {
                     </div>
 
                     {/* Price */}
-                    <div>
+                    <div className="col-span-3 md:col-span-1">
                         <label className="text-sm font-medium text-gray-700">Price</label>
                         <input
                             type="number"
@@ -324,7 +324,7 @@ export default function EventsForm() {
                     </div>
 
                     {/* Seats */}
-                    <div>
+                    <div className="col-span-3 md:col-span-1">
                         <label className="text-sm font-medium text-gray-700">Seats</label>
                         <input
                             type="number"

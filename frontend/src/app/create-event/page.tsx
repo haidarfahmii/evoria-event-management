@@ -5,7 +5,7 @@ export default function page() {
     return (
         <main >
             <section className="max-w-3xl mx-auto py-10">
-                <div className=" flex flex-col gap-2">
+                <div className=" flex flex-col gap-2 px-2 py-4">
                     <h1 className="font-bold text-3xl">Create Your Event</h1>
                     <h2>Let your event go beyond their imagination</h2>
                 </div>
