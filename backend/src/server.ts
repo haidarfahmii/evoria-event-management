@@ -3,8 +3,8 @@ import dotenv from "dotenv";
 import eventsRouter from "./routers/events.route";
 import { corsOptions } from "./middlewares/cors.options.middleware";
 import { PORT } from "./config/index.config";
-import authRouter from "./routers/auth.router";
-import profileRouter from "./routers/profile.router";
+import authRouter from "./routers/auth.route";
+import profileRouter from "./routers/profile.route";
 import { MulterError } from "multer";
 
 dotenv.config();
@@ -16,13 +16,12 @@ app.use(corsOptions);
 app.use(express.json());
 app.use(corsOptions);
 
-app.use('/api/events', eventsRouter)
-
-// app.get("/", (_req: Request, res: Response) => {
-//   res.send("Travel App API is Running 🚀");
-// });
+app.get("/", (_req: Request, res: Response) => {
+  res.send("Travel App API is Running 🚀");
+});
 
 app.use("/api/auth", authRouter);
+app.use("/api/events", eventsRouter);
 app.use("/api/profile", profileRouter);
 
 /*

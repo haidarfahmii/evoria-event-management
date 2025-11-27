@@ -1,4 +1,4 @@
-import { prisma } from "../config/prisma.config";
+import prisma from "../config/prisma.config";
 import bcrypt from "bcrypt";
 import { createToken } from "../utils/jwt.util";
 import {
