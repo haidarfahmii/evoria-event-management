@@ -8,7 +8,7 @@ type Event = {
     date: string;
     city: string;
     venue: string;
-    price: number;
+    startDate: string;
 };
 
 export default function EventCard({ events }: { events: Event[]}) {
@@ -45,7 +45,7 @@ export default function EventCard({ events }: { events: Event[]}) {
                                 <div className="space-y-2 mb-4">
                                     <div className="flex items-center text-slate-500 text-sm">
                                         <FiCalendar className="w-4 h-4 mr-2 text-primary-500" />
-                                        <span>{new Date(event.date).toLocaleDateString('en-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                        <span>{new Date(event.startDate).toLocaleDateString('en-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                                     </div>
                                     <div className="flex items-center text-slate-500 text-sm">
                                         <FiMap className="w-4 h-4 mr-2 text-primary-500" />
@@ -56,9 +56,9 @@ export default function EventCard({ events }: { events: Event[]}) {
 
                             <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
                                 <span className="text-slate-400 text-xs font-medium">Starts from</span>
-                                <span className="text-primary-700 font-bold text-lg">
+                                {/* <span className="text-primary-700 font-bold text-lg">
                                     Rp {event.price.toLocaleString('id-ID')}
-                                </span>
+                                </span> */}
                             </div>
                         </div>
                     </div>
