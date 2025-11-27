@@ -20,6 +20,11 @@ enum Role {
   ORGANIZER
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
 enum TransactionStatus {
   WAITING_PAYMENT       // User belum upload bukti pembayaran
   WAITING_CONFIRMATION  // user sudah upload, menunggu persetujuan organizer
@@ -30,12 +35,15 @@ enum TransactionStatus {
 }
 
 model User {
-  id       String  @id @default(cuid())
-  name     String
-  email    String  @unique
-  password String
-  role     Role    @default(CUSTOMER)
-  avatarUrl String?
+  id            String  @id @default(cuid())
+  name          String
+  email         String  @unique
+  password      String
+  role          Role    @default(CUSTOMER)
+  phoneNumber   String?   @unique 
+  birthDate     DateTime? 
+  gender        Gender?   
+  avatarUrl     String?
 
   // Reset Password Fields
   resetPasswordToken   String?
@@ -70,24 +78,25 @@ model User {
 model Event {
   id             String   @id @default(cuid())
   name           String
+  slug           String   @unique
   description    String   @db.Text
-  category		 String
+  category		   String
   imageUrl	     String
   
   startDate      DateTime 
   endDate        DateTime 
   
-  city              String
-  venue             String
+  city           String
+  venue          String
   
   ticketTypes    TicketType[] 
 
-  organizerId String
-  organizer   User   @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  organizerId    String
+  organizer      User   @relation("OrganizerEvents", fields: [organizerId], references: [id])
 
-  reviews      Review[]
-  transactions Transaction[]
-  promotions   Promotion[] // Voucher dari organizer
+  reviews        Review[]
+  transactions   Transaction[]
+  promotions     Promotion[] // Voucher dari organizer
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
