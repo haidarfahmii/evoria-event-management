@@ -1,12 +1,10 @@
 import { Router } from "express";
 import eventsController from "../controllers/events.controller";
+import { verifyToken } from "../middlewares/verify.token.middleware";
+import { JWT_SECRET_KEY_AUTH } from "../config/index.config";
 
 const router = Router();
 
-router.post('/', eventsController.create)
-router.get('/', eventsController.getAll)
-router.get('/:id', eventsController.getById)
-router.put('/:id', eventsController.update)
-router.delete('/:id', eventsController.delete)
+router.post("/", verifyToken(JWT_SECRET_KEY_AUTH!), eventsController.create);
 
 export default router;

@@ -1,6 +1,7 @@
 import { Response, Request, NextFunction } from "express";
 import { profileService } from "../services/profile.service";
 import { AppError } from "../utils/app-error";
+import { Gender } from "../generated/prisma/client";
 
 export const profileController = {
   async getProfile(req: Request, res: Response, next: NextFunction) {
@@ -16,10 +17,13 @@ export const profileController = {
 
   async updateProfile(req: Request, res: Response, next: NextFunction) {
     const userId = res?.locals?.payload?.userId;
-    const { name } = req.body;
+    const { name, phoneNumber, birthDate, gender } = req.body;
 
     const updateProfile = await profileService.updateProfile(userId, {
       name,
+      phoneNumber,
+      birthDate,
+      gender: gender as Gender,
     });
 
     res.status(200).json({

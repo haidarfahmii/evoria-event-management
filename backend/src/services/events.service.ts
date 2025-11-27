@@ -1,62 +1,49 @@
 import prisma from "../config/prisma.config";
 import { Event } from "../generated/prisma/client";
 
+type TicketTypeInput = {
+  name: string;
+  price: number;
+  seats: number;
+};
+
 type EventInput = Pick<
-    Event,
-    | "name"
-    | "description"
-    | "price"
-    | "availableSeats"
-    | "date"
-    | "city"
-    | "venue"
-    | "category"
-    | "organizerId"
->;
+  Event,
+  | "name"
+  | "startDate"
+  | "endDate"
+  | "city"
+  | "venue"
+  | "category"
+  | "description"
+  | "imageUrl"
+  | "slug"
+  | "organizerId"
+> & {
+  ticketTypes: TicketTypeInput;
+};
 
 export const eventsService = {
-    async create(data: EventInput) {
-        const event = await prisma.event.create({
-            data,
-        })
+  async create(data: EventInput & { ticketTypes?: TicketTypeInput[] }) {
+    return await prisma.$transaction(async (tx) => {
+      const { ticketTypes, ...eventData } = data;
 
-        return event;
-    },
+      const event = await tx.event.create({
+        data: eventData,
+      });
 
-    async get() {
-        const events = await prisma.event.findMany();
-        return events;
-    },
+      const ticketType = await Promise.all(
+        ticketTypes.map((ticket) =>
+          tx.ticketType.create({
+            data: {
+              eventId: event.id,
+              ...ticket,
+            },
+          })
+        )
+      );
 
-    async getById(id: string) {
-        const event = await prisma.event.findFirst({
-            where: {
-                id
-            }
-        })
-
-        if (!event) {
-            throw new Error("Event is not found");
-        }
-
-        return event;
-    },
-
-    async update(id: string, data: EventInput) {
-
-        const event = await prisma.event.update({
-            where: { id },
-            data,
-        });
-
-        return event;
-    },
-
-    async delete(id: string) {
-        const event = await prisma.event.delete({
-            where: {
-                id
-            }
-        })
-    }
-}
+      return { event, ticketType };
+    });
+  },
+};
