@@ -56,7 +56,7 @@ export default function useEventsForm() {
         // await createEvent(values);
         // router.push('/events');
       } catch (error) {
-        console.error('Error submitting form:', error);
+        console.error(error);
       }
     }
   })
