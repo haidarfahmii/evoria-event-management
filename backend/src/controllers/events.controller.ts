@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { eventsService } from "../services/events.service";
+import { AppError } from "../utils/app-error";
 
 function generateSlug(name: string): string {
     const base = name
@@ -17,13 +18,47 @@ function generateSlug(name: string): string {
 const eventsController = {
     async create(req: Request, res: Response) {
         const {
-            name, description, startDate, endDate, city, venue, category, imageUrl, ticketTypes } = req.body;
+            name, description, startDate, endDate, city, venue, category, ticketTypes } = req.body;
 
         const organizerId = res.locals.payload.userId;
 
         const slug = generateSlug(name);
 
-        const event = await eventsService.create({ name, description, startDate, endDate, city, venue, category, imageUrl, slug, ticketTypes, organizerId })
+        const rawImageUrl = req.file?.path;
+
+        if (!rawImageUrl) {
+            // Jika file tidak ada atau upload gagal, kirim error 400
+            return AppError('Image is required', 400)
+        }
+
+        const imageUrl: string = rawImageUrl; 
+
+        // Lakukan Parsing JSON di sini 
+        let parsedTicketTypes = [];
+        try {
+            if (typeof ticketTypes === 'string') {
+                parsedTicketTypes = JSON.parse(ticketTypes);
+            } else if (Array.isArray(ticketTypes)) {
+                parsedTicketTypes = ticketTypes;
+            } else {
+                parsedTicketTypes = []; 
+            }
+            if (!Array.isArray(parsedTicketTypes)) {
+                 return res.status(400).json({
+                    success: false,
+                    message: "ticketTypes must be an array of ticket objects.",
+                });
+            }
+
+        } catch (error) {
+            console.error("Error parsing ticketTypes:", error);
+            return res.status(400).json({
+                success: false,
+                message: "Invalid JSON format for ticketTypes.",
+            });
+        }
+
+        const event = await eventsService.create({ name, description, startDate, endDate, city, venue, category, imageUrl, slug, ticketTypes: parsedTicketTypes, organizerId })
 
         res.status(201).json({
             success: true,

@@ -21,7 +21,7 @@ type EventInput = Pick<
     | "slug"
     | "organizerId"
 > & {
-    ticketTypes: TicketTypeInput;
+    ticketTypes: TicketTypeInput[];
 };
 
 export const eventsService = {

@@ -9,6 +9,7 @@ type Event = {
     city: string;
     venue: string;
     startDate: string;
+    imageUrl: string;
 };
 
 export default function EventCard({ events }: { events: Event[]}) {
@@ -25,7 +26,7 @@ export default function EventCard({ events }: { events: Event[]}) {
                     >
                         <div className="relative h-48 overflow-hidden">
                             <Image
-                                src={'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg'}
+                                src={event.imageUrl}
                                 alt={event.name}
                                 width={200}
                                 height={200}
