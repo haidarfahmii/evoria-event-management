@@ -3,7 +3,7 @@
 import { FiSearch, FiMapPin, FiFilter } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import EventCard from "@/components/EventCard";
-import axiosInstance from "@/utils/axios-instance";
+import axiosInstance from "@/utils/axiosInstance";
 import categoriesData from "./../data/categoriesData.json"
 import citiesData from "./../data/citiesData.json"
 export default function Home() {
@@ -20,7 +20,7 @@ export default function Home() {
   // Fetch event from api
   const onGetAllEvents = async () => {
     try {
-      const response = await axiosInstance.get('/api/events');
+      const response = await axiosInstance.get('/events');
       setEvents(response?.data?.data)
 
     } catch (error) {
@@ -42,7 +42,7 @@ export default function Home() {
       selectedCity === "All" || event.city === selectedCity;
 
     const matchesCat =
-      selectedCategory === "All" || event.category === selectedCategory.toLowerCase();
+      selectedCategory === "All" || event.category.toLowerCase() === selectedCategory.toLowerCase();
 
     return matchesSearch && matchesCity && matchesCat;
   });
