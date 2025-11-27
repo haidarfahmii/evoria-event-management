@@ -1,65 +1,146 @@
-import Image from "next/image";
+'use client'
 
+import { FiSearch, FiMapPin, FiFilter } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import EventCard from "@/components/EventCard";
+import axiosInstance from "@/utils/axios-instance";
+import categoriesData from "./../data/categoriesData.json"
+import citiesData from "./../data/citiesData.json"
 export default function Home() {
+
+  const categories = categoriesData.categories;
+
+  const cities = citiesData.cities;
+
+  const [events, setEvents] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedCity, setSelectedCity] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  // Fetch event from api
+  const onGetAllEvents = async () => {
+    try {
+      const response = await axiosInstance.get('/api/events');
+      setEvents(response?.data?.data)
+
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  useEffect(() => {
+    onGetAllEvents();
+  }, [])
+
+  // Filtering
+  const filteredEvents = events.filter(event => {
+    const matchesSearch =
+      event.name?.toLowerCase().includes(search.toLowerCase()) ||
+      event.description?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesCity =
+      selectedCity === "All" || event.city === selectedCity;
+
+    const matchesCat =
+      selectedCategory === "All" || event.category === selectedCategory.toLowerCase();
+
+    return matchesSearch && matchesCity && matchesCat;
+  });
+
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main>
+
+      {/* Hero section */}
+      <section className="bg-blue-200">
+        <div className="max-w-6xl mx-auto flex flex-col gap-5 px-4 py-20">
+          <h1 className="text-4xl font-bold">Discover Unforgettable Experiences</h1>
+          <h2 className="text-xl">From music festivals in Bali to tech summits in Jakarta. Find your next adventure with Evoria.</h2>
+
+          {/* Search Bar */}
+          <div className="bg-white p-2 rounded-xl shadow-2xl max-w-3xl flex flex-col md:flex-row gap-2">
+
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search events, organizers, or venues..."
+                className="w-full pl-10 pr-4 py-3 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* City Select */}
+            <div className="md:w-48 relative border-l border-slate-200 md:pl-2">
+              <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <select
+                className="w-full pl-9 pr-4 py-3 rounded-lg text-slate-700 bg-transparent focus:outline-none cursor-pointer appearance-none"
+                onChange={(e) => setSelectedCity(e.target.value)}
+              >
+                <option value="All">All Cities</option>
+                {cities?.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Button */}
+            <button className="bg-black hover:bg-primary-700 text-white px-8 py-3 rounded-lg font-medium transition-colors shadow-lg md:w-auto w-full">
+              Find
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Discovery Event Section */}
+      <section>
+        {/* Event Filter Category */}
+        <div className="max-w-6xl mx-auto px- sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="mr-2 text-slate-500 flex items-center text-sm font-medium">
+              <FiFilter className="w-4 h-4 mr-1" />
+              Filter by:
+            </div>
+            <button
+              onClick={() => setSelectedCategory("All")}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === "All"
+                  ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
+                  : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
+                }`}
+            >
+              All
+            </button>
+
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === cat
+                  ?
+                  'bg-slate-900 text-white shadow-md hover:bg-slate-800'
+                  :
+                  'bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600'
+                  }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
-      </main>
-    </div>
+
+        {/* Card Event Grid */}
+        {filteredEvents.length === 0 ? (
+          <div className="text-center py-10 text-slate-500">
+            No events match your search or filters.
+          </div>
+        ) : (
+          <EventCard events={filteredEvents} />
+        )}
+
+
+      </section>
+
+    </main>
   );
 }

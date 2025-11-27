@@ -1,7 +1,8 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-import { PORT } from "./config/index.config";
+import eventsRouter from "./routers/events.route";
 import { corsOptions } from "./middlewares/cors.options.middleware";
+import { PORT } from "./config/index.config";
 import authRouter from "./routers/auth.router";
 import profileRouter from "./routers/profile.router";
 import { MulterError } from "multer";
@@ -13,6 +14,9 @@ const app: Express = express();
 // Middlewares
 app.use(corsOptions);
 app.use(express.json());
+app.use(corsOptions);
+
+app.use('/api/events', eventsRouter)
 
 // app.get("/", (_req: Request, res: Response) => {
 //   res.send("Travel App API is Running 🚀");
