@@ -45,6 +45,9 @@ export default function Home() {
       selectedCategory === "All" || event.category.toLowerCase() === selectedCategory.toLowerCase();
 
     return matchesSearch && matchesCity && matchesCat;
+  }).
+  sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
 
@@ -105,8 +108,8 @@ export default function Home() {
             <button
               onClick={() => setSelectedCategory("All")}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === "All"
-                  ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
-                  : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
+                ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
+                : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
                 }`}
             >
               All
