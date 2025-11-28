@@ -43,9 +43,24 @@ export const eventFormValidationSchema = yup.object().shape({
         .max(1000, 'Description cannot exceed 1000 characters'),
 
     imageUrl: yup
-        .string()
-        .required('Image banner URL is required')
-        .url('Image banner must be a valid URL'),
+        .array()
+        .min(1, 'Select image is required')
+        .of(
+            yup.mixed<File>()
+                .test('fileSize', 'Maximum file size is 5mb', (file) => {
+                    if (!file) return false;
+                    return file?.size < 5 * 1024 * 1024;
+                })
+                .test('formatFile', 'Format file not acceptable', (file) => {
+                    const acceptedFiles = ['webp', 'jpg', 'jpeg', 'png'];
+                    if (!file) return false;
+
+                    const fileNameLength = file?.name.split('.').length;
+                    const fileExtension = file?.name.split('.')[fileNameLength - 1];
+
+                    return acceptedFiles.includes(fileExtension)
+                })
+        ),
 
     ticketTypes: yup
         .array()

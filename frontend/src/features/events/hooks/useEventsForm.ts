@@ -1,11 +1,12 @@
 'use client'
 
-import { useFormik } from "formik"
+import { Form, useFormik } from "formik"
 import { useRouter } from "next/navigation"
 import { eventFormValidationSchema } from "../schemas/eventsSchema";
+import axiosInstance from "@/utils/axiosInstance";
 
 interface TicketType {
-    id: number;
+  id: number;
   name: string;
   price: number;
   seats: number;
@@ -19,7 +20,7 @@ interface EventFormValues {
   venue: string,
   category: string,
   description: string,
-  imageUrl: string,
+  imageUrl: File[],
   ticketTypes: TicketType[];
 }
 
@@ -34,7 +35,7 @@ export default function useEventsForm() {
     venue: '',
     category: '',
     description: '',
-    imageUrl: '',
+    imageUrl: [] as File[],
     ticketTypes: [
       {
         id: 0,
@@ -48,12 +49,41 @@ export default function useEventsForm() {
   const formik = useFormik({
     initialValues,
     validationSchema: eventFormValidationSchema,
-    onSubmit: async (values) => {
+    onSubmit: async ({ name, startDate, endDate, city, venue, category, description, imageUrl, ticketTypes }) => {
       try {
         // Handle form submission
-        console.log('Form values:', values);
+        const formData = new FormData();
+
+        const startDateISO = new Date(startDate).toISOString();
+        const endDateISO = new Date(endDate).toISOString();
+
+        // console.log(startDateISO); // "2025-11-28T10:30:00.000Z"
+        // console.log(endDateISO);   // "2025-11-28T12:30:00.000Z"
+
+        formData.append('name', name);
+        formData.append('description', description);
+        formData.append('startDate', startDateISO);
+        formData.append('endDate', endDateISO);
+        formData.append('city', city);
+        formData.append('venue', venue);
+        formData.append('category', category)
+
+        imageUrl.forEach((imageUrl) => {
+          formData.append('imageUrl', imageUrl); // or 'imageUrl[]' if your backend expects an array
+        });
+
+        // Remove id before sending
+        const ticketTypesWithoutId = ticketTypes.map(({ name, price, seats }) => ({
+          name,
+          price,
+          seats,
+        }));
+        // Convert ticketTypes to JSON string
+        formData.append('ticketTypes', JSON.stringify(ticketTypesWithoutId));
+
+        console.log('Form values:', { name, startDate, endDate, city, venue, category, description, imageUrl, ticketTypes });
         // Add your API call here
-        // await createEvent(values);
+        await axiosInstance.post('/events', formData);
         // router.push('/events');
       } catch (error) {
         console.error(error);
