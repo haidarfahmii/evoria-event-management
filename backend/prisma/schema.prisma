@@ -49,6 +49,11 @@ model User {
   resetPasswordToken   String?
   resetPasswordExpiresAt DateTime?
 
+  // email verification fields
+  isEmailVerified             Boolean     @default(false)
+  emailVerificationToken      String?     @unique
+  emailVerificationExpiresAt  DateTime?
+
   // Login Tracking Fields
   lastLoginAt             DateTime? // Track kapan terakhir login
   lastLoginIp             String?   // Track dari IP mana
@@ -209,7 +214,7 @@ model Transaction {
   eventId   String
   event     Event    @relation(fields: [eventId], references: [id])
   
-  // *** UPDATED: Link ke TicketType
+  // Link ke TicketType
   ticketTypeId String?
   ticketType   TicketType? @relation(fields: [ticketTypeId], references: [id])
 
@@ -227,15 +232,17 @@ model Transaction {
 
   finalPrice  Int
 
-  // *** UPDATED: Transaction Flow
+  // Transaction Flow
   status      TransactionStatus @default(WAITING_PAYMENT)
   
-  // Requirement: "Payment Proof".
+  // Deadline Tracking
   paymentProof String? // URL gambar bukti bayar
-  
-  // Requirement: 2 jam countdown & 3 hari admin response
-  // Kita butuh timestamp kapan user upload bukti bayar untuk hitung 3 hari admin.
-  paymentProofUploadedAt DateTime? 
+  paymentProofUploadedAt DateTime? // mencatat waktu kapan bukti pembayaran di uplaod
+  expiresAt DateTime? // 2 jam countdown (batas waktu pembayaran bagi user)
+  organizerResponseDeadline DateTime? // 3 hari deadline (batas waktu response dari Organizer)
+
+  // reminder tracking
+  reminderSent Boolean  @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
