@@ -11,7 +11,7 @@ router.post('/',
     multerCloudinaryUploader(
         "evoria-avatars", // Nama folder di Cloudinary
         ["jpg", "jpeg", "png", "webp"], // Format yang diterima
-        2 * 1024 * 1024 // Maksimal 2MB
+        5 * 1024 * 1024 // Maksimal 5MB
     ).single("imageUrl"),
     verifyToken(JWT_SECRET_KEY_AUTH!),
     verifyRole(['ORGANIZER']),
