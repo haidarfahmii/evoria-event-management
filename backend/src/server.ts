@@ -3,9 +3,13 @@ import dotenv from "dotenv";
 import eventsRouter from "./routers/events.route";
 import { corsOptions } from "./middlewares/cors.options.middleware";
 import { PORT } from "./config/index.config";
+import { MulterError } from "multer";
 import authRouter from "./routers/auth.route";
 import profileRouter from "./routers/profile.route";
-import { MulterError } from "multer";
+import dashboardRouter from "./routers/dashboard.route";
+import emailRouter from "./routers/email.route";
+import transactionRouter from "./routers/transaction.route";
+import { startCronJobs } from "./utils/corn.util";
 
 dotenv.config();
 
@@ -14,7 +18,6 @@ const app: Express = express();
 // Middlewares
 app.use(corsOptions);
 app.use(express.json());
-app.use(corsOptions);
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("Travel App API is Running 🚀");
@@ -23,6 +26,9 @@ app.get("/", (_req: Request, res: Response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/events", eventsRouter);
 app.use("/api/profile", profileRouter);
+app.use("/api/transactions", transactionRouter);
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/email", emailRouter);
 
 /*
   Middleware (Application Level)
@@ -52,6 +58,9 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     data: null,
   });
 });
+
+// start corn jobs
+startCronJobs();
 
 app.listen(PORT, () => {
   console.log(`⚡️[server]: Server is running at http://localhost:${PORT}`);

@@ -9,6 +9,8 @@ dotenv.config({
 export const JWT_SECRET_KEY_AUTH = process.env.JWT_SECRET_KEY_AUTH;
 export const JWT_EXPIRES_IN = "1d";
 export const JWT_EXPIRES_IN_REMEMBER_ME = "7d";
+export const JWT_SECRET_KEY_EMAIL_VERIFICATION =
+  process.env.JWT_SECRET_KEY_EMAIL_VERIFICATION;
 
 // WHITELIST
 export const WHITELIST = [process.env.WHITELIST || "http://localhost:3000"];

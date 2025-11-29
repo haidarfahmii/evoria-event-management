@@ -12,6 +12,7 @@ import { AuthResponse, LoginInput, RegisterInput } from "../@types";
 import crypto from "crypto";
 import { transporter } from "../config/nodemailer.config";
 import { Request } from "express";
+import { emailService } from "./email.service";
 
 export const authService = {
   async register(input: RegisterInput): Promise<void> {
@@ -78,7 +79,7 @@ export const authService = {
     const finalRole = role === Role.ORGANIZER ? Role.ORGANIZER : Role.CUSTOMER;
 
     // create user dengan transaction
-    await prisma.$transaction(async (tx) => {
+    const newUser = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           name,
@@ -92,12 +93,13 @@ export const authService = {
 
       // jika user menggunakan referral, buat rewards
       if (referredByUserId) {
+        const expireDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // expire dalam 3 bulan
         // kasih 10.000 point dari referral code dengan expire 3 bulan
         await tx.point.create({
           data: {
             userId: referredByUserId,
             amount: 10000,
-            expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+            expiresAt: expireDate,
           },
         });
 
@@ -107,11 +109,21 @@ export const authService = {
             userId: user.id,
             code: `WELCOME${newReferralCode}`,
             percentage: 10,
-            expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+            expiresAt: expireDate,
           },
         });
       }
+
+      return user;
     });
+
+    if (newUser) {
+      await emailService.sendWelcomeEmail(
+        newUser.id,
+        newUser.email,
+        newUser.name
+      );
+    }
   },
 
   async login(input: LoginInput, req: Request): Promise<AuthResponse> {
@@ -133,15 +145,20 @@ export const authService = {
       throw new Error("Email or password is invalid");
     }
 
+    // cek verifikasi
+    if (!findUser.isEmailVerified) {
+      throw new Error("Email is not verified");
+    }
+
     // tentukan durasi token
     const expiresIn = rememberMe ? JWT_EXPIRES_IN_REMEMBER_ME : JWT_EXPIRES_IN;
 
     // create token
     const token = await createToken(
       {
-        userId: findUser?.id,
-        role: findUser?.role,
-        email: findUser?.email,
+        userId: findUser.id,
+        role: findUser.role,
+        email: findUser.email,
       },
       JWT_SECRET_KEY_AUTH!,
       {
@@ -167,10 +184,10 @@ export const authService = {
     return {
       token,
       user: {
-        id: findUser?.id,
-        name: findUser?.name,
-        email: findUser?.email,
-        role: findUser?.role,
+        id: findUser.id,
+        name: findUser.name,
+        email: findUser.email,
+        role: findUser.role,
       },
     };
   },
