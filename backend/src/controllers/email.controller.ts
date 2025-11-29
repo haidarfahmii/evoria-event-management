@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { emailService } from "../services/email.service";
+import { emailService } from "../services/notif-mail-transaction.service";
 
 export const emailController = {
   async verifyEmail(req: Request, res: Response, next: NextFunction) {

@@ -3,7 +3,7 @@
 import prisma from "../config/prisma.config";
 import { TransactionStatus } from "../generated/prisma/client";
 import { transactionService } from "../services/transaction.service";
-import { emailService } from "../services/email.service";
+import { emailService } from "../services/notif-mail-transaction.service";
 
 /**
  * Check and process expired/cancelled transactions

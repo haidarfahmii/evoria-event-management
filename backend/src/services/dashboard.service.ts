@@ -8,7 +8,7 @@ import {
   TransactionError,
 } from "../@types/transaction.index";
 import { TransactionStatus } from "../generated/prisma/client";
-import { emailService } from "./email.service";
+import { emailService } from "./notif-mail-transaction.service";
 import { transactionService } from "./transaction.service";
 
 export const dashboardService: IDashboardService = {

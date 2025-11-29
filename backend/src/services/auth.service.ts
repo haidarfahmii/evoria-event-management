@@ -1,18 +1,22 @@
 import prisma from "../config/prisma.config";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { createToken } from "../utils/jwt.util";
 import {
   JWT_SECRET_KEY_AUTH,
   JWT_EXPIRES_IN,
   JWT_EXPIRES_IN_REMEMBER_ME,
+  JWT_SECRET_KEY_EMAIL_VERIFICATION,
+  CLIENT_URL,
+  JWT_SECRET_KEY_PASSWORD_RESET,
 } from "../config/index.config";
 import { generateReferralCode } from "../utils/referral.util";
 import { Role } from "../generated/prisma/client";
 import { AuthResponse, LoginInput, RegisterInput } from "../@types";
-import crypto from "crypto";
 import { transporter } from "../config/nodemailer.config";
 import { Request } from "express";
-import { emailService } from "./email.service";
+import { mailService } from "./mail.service";
+import { AppError } from "../utils/app-error";
 
 export const authService = {
   async register(input: RegisterInput): Promise<void> {
@@ -26,7 +30,7 @@ export const authService = {
     });
 
     if (existingUser) {
-      throw new Error("User already exists");
+      throw AppError("User already exists", 400);
     }
 
     // cek jika referral code ada input
@@ -40,7 +44,7 @@ export const authService = {
       });
 
       if (!referrer) {
-        throw new Error("Invalid referral code");
+        throw AppError("Invalid referral code", 400);
       }
 
       referredByUserId = referrer.id;
@@ -72,7 +76,7 @@ export const authService = {
     }
 
     if (!isUnique) {
-      throw new Error("Failed to generate unique referral code");
+      throw AppError("Failed to generate unique referral code", 500);
     }
 
     // tentukan role (default CUSTOMER)
@@ -88,6 +92,7 @@ export const authService = {
           role: finalRole,
           referralCode: newReferralCode,
           referredByUserId,
+          isEmailVerified: false,
         },
       });
 
@@ -117,13 +122,31 @@ export const authService = {
       return user;
     });
 
-    if (newUser) {
-      await emailService.sendWelcomeEmail(
-        newUser.id,
-        newUser.email,
-        newUser.name
-      );
-    }
+    // kirim email verifikasi diaman token hanya berisi ID, valid 1 jam
+    const verificationToken = jwt.sign(
+      {
+        userId: newUser.id,
+      },
+      JWT_SECRET_KEY_EMAIL_VERIFICATION!,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    console.log("verificationToken", verificationToken);
+
+    const verificationUrl = `${CLIENT_URL}/verify-email/${verificationToken}`;
+
+    await mailService.sendMail({
+      to: newUser.email,
+      subject: "Welcome to Evoria - Verify Your Email",
+      template: "verification.html",
+      context: {
+        name: newUser.name,
+        verificationLink: verificationUrl,
+        year: new Date().getFullYear(),
+      },
+    });
   },
 
   async login(input: LoginInput, req: Request): Promise<AuthResponse> {
@@ -135,37 +158,20 @@ export const authService = {
     });
 
     if (!findUser) {
-      throw new Error("Email or password is invalid");
+      throw AppError("Email or password is invalid", 400);
     }
 
     // verify password
     const isPasswordValid = await bcrypt.compare(password, findUser.password);
 
     if (!isPasswordValid) {
-      throw new Error("Email or password is invalid");
+      throw AppError("Email or password is invalid", 400);
     }
 
     // cek verifikasi
     if (!findUser.isEmailVerified) {
-      throw new Error("Email is not verified");
+      throw AppError("Please verify your email address first.", 403);
     }
-
-    // tentukan durasi token
-    const expiresIn = rememberMe ? JWT_EXPIRES_IN_REMEMBER_ME : JWT_EXPIRES_IN;
-
-    // create token
-    const token = await createToken(
-      {
-        userId: findUser.id,
-        role: findUser.role,
-        email: findUser.email,
-      },
-      JWT_SECRET_KEY_AUTH!,
-      {
-        expiresIn,
-      }
-    );
-
     // login tracking
     const clientIp = this.getClientIp(req);
     await prisma.user.update({
@@ -181,6 +187,21 @@ export const authService = {
       },
     });
 
+    // tentukan durasi token
+    const expiresIn = rememberMe ? JWT_EXPIRES_IN_REMEMBER_ME : JWT_EXPIRES_IN;
+    // create token
+    const token = await createToken(
+      {
+        userId: findUser.id,
+        role: findUser.role,
+        email: findUser.email,
+      },
+      JWT_SECRET_KEY_AUTH!,
+      {
+        expiresIn,
+      }
+    );
+
     return {
       token,
       user: {
@@ -192,22 +213,29 @@ export const authService = {
     };
   },
 
-  // helper to get client IP
-  getClientIp(req: Request): string {
-    const forwarded = req.headers["x-forwarded-for"];
-    const realIp = req.headers["x-real-ip"];
+  async emailVerification(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
 
-    if (forwarded) {
-      return typeof forwarded === "string"
-        ? forwarded.split(",")[0].trim()
-        : forwarded[0];
+    if (!user) {
+      throw AppError("User not found", 404);
     }
 
-    if (realIp) {
-      return typeof realIp === "string" ? realIp : realIp[0];
+    if (user.isEmailVerified) {
+      throw AppError("Email already verified", 400);
     }
 
-    return req.socket.remoteAddress || "unknown";
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        isEmailVerified: true,
+      },
+    });
   },
 
   async forgotPassword(email: string) {
@@ -219,50 +247,38 @@ export const authService = {
       return;
     }
 
-    // Generate Token Random
-    const token = crypto.randomBytes(32).toString("hex");
-    // hash token sebelum storing
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + 3600000); // Expire dalam 1 jam
-
-    // Simpan token ke DB
-    await prisma.user.update({
-      where: { email },
-      data: {
-        resetPasswordToken: tokenHash,
-        resetPasswordExpiresAt: expiresAt,
+    // Generate Token Reset (Stateless, 30 menit)
+    const resetToken = jwt.sign(
+      {
+        userId: user.id,
       },
-    });
+      JWT_SECRET_KEY_PASSWORD_RESET!,
+      {
+        expiresIn: "30m",
+      }
+    );
 
-    // Kirim Email Link Reset Password
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const resetLink = `${CLIENT_URL}/reset-password/${resetToken}`;
 
-    await transporter.sendMail({
-      from: process.env.MAIL_USER,
-      to: email,
+    await mailService.sendMail({
+      to: user.email,
       subject: "Reset Your Password - Evoria Event",
-      html: `
-        <h3>Password Reset Request</h3>
-        <p>Click the link below to reset your password. This link expires in 1 hour.</p>
-        <a href="${resetLink}">${resetLink}</a>
-        <p>If you didn't request this, please ignore this email.</p>
-      `,
+      template: "reset-password.html", // Pastikan file ini ada
+      context: {
+        link: resetLink,
+      },
     });
   },
 
-  async resetPassword(token: string, newPassword: string) {
-    // hash token untuk komparasi
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    // Cari user berdasarkan token dan cek apakah token belum expired
-    const user = await prisma.user.findFirst({
+  async resetPassword(userId: string, newPassword: string) {
+    const user = await prisma.user.findUnique({
       where: {
-        resetPasswordToken: tokenHash,
-        resetPasswordExpiresAt: { gt: new Date() }, // Token harus expire > waktu sekarang
+        id: userId,
       },
     });
 
     if (!user) {
-      throw new Error("Invalid or expired token");
+      throw AppError("User not found", 404);
     }
 
     // Hash password baru
@@ -270,11 +286,9 @@ export const authService = {
 
     // Update password dan hapus token
     await prisma.user.update({
-      where: { id: user.id },
+      where: { id: userId },
       data: {
         password: hashedPassword,
-        resetPasswordToken: null,
-        resetPasswordExpiresAt: null,
       },
     });
 
@@ -293,5 +307,23 @@ export const authService = {
     } catch (error) {
       console.error("Failed to send confirmation email:", error);
     }
+  },
+
+  // helper to get client IP
+  getClientIp(req: Request): string {
+    const forwarded = req.headers["x-forwarded-for"];
+    const realIp = req.headers["x-real-ip"];
+
+    if (forwarded) {
+      return typeof forwarded === "string"
+        ? forwarded.split(",")[0].trim()
+        : forwarded[0];
+    }
+
+    if (realIp) {
+      return typeof realIp === "string" ? realIp : realIp[0];
+    }
+
+    return req.socket.remoteAddress || "unknown";
   },
 };

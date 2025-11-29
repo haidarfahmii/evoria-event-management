@@ -10,7 +10,7 @@ import {
 } from "../@types/transaction.index";
 import { Transaction, TransactionStatus } from "../generated/prisma/client";
 import { AppError } from "../utils/app-error";
-import { emailService } from "./email.service";
+import { emailService } from "./notif-mail-transaction.service";
 
 export const transactionService: ITransactionService = {
   // Rollback Transaction

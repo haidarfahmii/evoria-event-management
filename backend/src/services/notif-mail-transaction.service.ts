@@ -1,6 +1,5 @@
 import { transporter } from "../config/nodemailer.config";
 import { emailTemplates } from "../utils/email-templates.util";
-import crypto from "crypto";
 import prisma from "../config/prisma.config";
 import { IEmailService } from "../@types/transaction.index";
 
@@ -18,89 +17,6 @@ export const emailService: IEmailService = {
       console.error(`❌ Failed to send email to ${to}:`, error);
       throw error;
     }
-  },
-
-  async sendWelcomeEmail(userId: string, userEmail: string, userName: string) {
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        emailVerificationToken: tokenHash,
-        emailVerificationExpiresAt: expiresAt,
-      },
-    });
-
-    const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
-    const html = emailTemplates.welcomeEmail({ userName, verificationLink });
-
-    await this.sendEmail(
-      userEmail,
-      "Welcome to Evoria - Verify Your Email",
-      html
-    );
-  },
-
-  async sendEmailVerifiedSuccess(userEmail: string, userName: string) {
-    const html = `<h2>Hi ${userName},</h2><p>Your email has been verified! 🎉</p>`;
-    await this.sendEmail(userEmail, "Email Verified - Evoria", html);
-  },
-
-  async verifyEmailToken(token: string) {
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-
-    const user = await prisma.user.findFirst({
-      where: {
-        emailVerificationToken: tokenHash,
-        emailVerificationExpiresAt: { gt: new Date() },
-      },
-    });
-
-    if (!user) {
-      throw new Error("Invalid or expired verification token");
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        isEmailVerified: true,
-        emailVerificationToken: null,
-        emailVerificationExpiresAt: null,
-      },
-    });
-
-    await this.sendEmailVerifiedSuccess(user.email, user.name);
-    return user;
-  },
-
-  async resendVerificationEmail(email: string) {
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user) throw new Error("User not found");
-    if (user.isEmailVerified) throw new Error("Email already verified");
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerificationToken: tokenHash,
-        emailVerificationExpiresAt: expiresAt,
-      },
-    });
-
-    const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
-    const html = emailTemplates.welcomeEmail({
-      userName: user.name,
-      verificationLink,
-    });
-
-    await this.sendEmail(user.email, "Verify Your Email - Evoria", html);
-    return user;
   },
 
   async sendTransactionCreated(transactionId: string) {

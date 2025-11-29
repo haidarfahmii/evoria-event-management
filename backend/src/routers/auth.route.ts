@@ -12,32 +12,44 @@ import {
   loginLimiter,
   registerLimiter,
 } from "../middlewares/rate-limiter.middleware";
+import { verifyToken } from "../middlewares/verify.token.middleware";
+import {
+  JWT_SECRET_KEY_EMAIL_VERIFICATION,
+  JWT_SECRET_KEY_PASSWORD_RESET,
+} from "../config/index.config";
 
 const router = Router();
 
 router.post(
   "/register",
-  registerLimiter,
+  // registerLimiter,
   registerValidator, // rules
   expressValidator, // middleware
   authController.register
 );
 router.post(
   "/login",
-  loginLimiter,
+  // loginLimiter,
   loginValidator,
   expressValidator,
   authController.login
 );
 router.post(
   "/forgot-password",
-  forgotPasswordLimiter,
+  // forgotPasswordLimiter,
   forgotPasswordValidator,
   expressValidator,
   authController.forgotPassword
 );
-router.post(
+
+router.patch(
+  "/verify-email",
+  verifyToken(JWT_SECRET_KEY_EMAIL_VERIFICATION!),
+  authController.emailVerification
+);
+router.patch(
   "/reset-password",
+  verifyToken(JWT_SECRET_KEY_PASSWORD_RESET!),
   resetPasswordValidator,
   expressValidator,
   authController.resetPassword

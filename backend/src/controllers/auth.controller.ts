@@ -37,6 +37,17 @@ export const authController = {
     });
   },
 
+  async emailVerification(req: Request, res: Response) {
+    const { userId } = res?.locals?.payload;
+
+    await authService.emailVerification(userId);
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+    });
+  },
+
   async forgotPassword(req: Request, res: Response) {
     const { email } = req.body;
 
@@ -49,13 +60,14 @@ export const authController = {
   },
 
   async resetPassword(req: Request, res: Response) {
-    const { token, password } = req.body;
+    const { userId } = res?.locals?.payload;
+    const { newPassword } = req.body;
 
-    await authService.resetPassword(token, password);
+    await authService.resetPassword(userId, newPassword);
 
     res.status(200).json({
       success: true,
-      message: "Password updated successfully",
+      message: "Password has been reset successfully. You can now login.",
     });
   },
 };
