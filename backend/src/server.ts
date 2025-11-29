@@ -50,6 +50,16 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     }
   }
 
+  // Handle Prisma Validation / Database Errors
+  if (err.code === "P2002") {
+    // Unique constraint violation
+    return res.status(409).json({
+      success: false,
+      message: "Data already exists (Unique constraint violation)",
+      data: null,
+    });
+  }
+
   res.status(statusCode).json({
     success: false,
     message,

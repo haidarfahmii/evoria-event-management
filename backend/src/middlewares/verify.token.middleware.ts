@@ -1,15 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { JWTPayload } from "../@types";
-
-// Extend Express Request agar TypeScript kenal properti `req.user`
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JWTPayload;
-    }
-  }
-}
+import { AppError } from "../utils/app-error";
 
 export function verifyToken(secretKey: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -18,7 +10,7 @@ export function verifyToken(secretKey: string) {
 
       // validasi token ada?
       if (!token) {
-        throw new Error("Unauthorized"); // lempar ke catch
+        throw AppError("Unauthorized: No token provided", 401); // lempar ke catch
       }
 
       // verify
