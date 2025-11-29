@@ -58,4 +58,33 @@ export const authController = {
       message: "Password updated successfully",
     });
   },
+
+  async emailVerification(req: Request, res: Response) {
+    const { userId } = res.locals.payload;
+
+    await authService.verifyEmail(userId);
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+    });
+  },
+
+  async resendVerificationEmail(req: Request, res: Response) {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    await authService.resendVerificationEmail(email);
+
+    res.status(200).json({
+      success: true,
+      message: "Verification email has been resent",
+    });
+  },
 };

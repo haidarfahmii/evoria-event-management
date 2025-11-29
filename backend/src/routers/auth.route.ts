@@ -12,6 +12,8 @@ import {
   loginLimiter,
   registerLimiter,
 } from "../middlewares/rate-limiter.middleware";
+import { verifyToken } from "../middlewares/verify.token.middleware";
+import { JWT_SECRET_KEY_EMAIL_VERIFICATION } from "../config/index.config";
 
 const router = Router();
 
@@ -42,5 +44,11 @@ router.post(
   expressValidator,
   authController.resetPassword
 );
+router.post(
+  "/email-verification",
+  verifyToken(JWT_SECRET_KEY_EMAIL_VERIFICATION!),
+  authController.emailVerification
+);
+router.post("/resend-verification", authController.resendVerificationEmail);
 
 export default router;

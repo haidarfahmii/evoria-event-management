@@ -5,6 +5,7 @@ import {
   JWT_SECRET_KEY_AUTH,
   JWT_EXPIRES_IN,
   JWT_EXPIRES_IN_REMEMBER_ME,
+  JWT_SECRET_KEY_EMAIL_VERIFICATION,
 } from "../config/index.config";
 import { generateReferralCode } from "../utils/referral.util";
 import { Role } from "../generated/prisma/client";
@@ -118,12 +119,64 @@ export const authService = {
     });
 
     if (newUser) {
+      // Create verification token (JWT)
+      const token = await createToken(
+        { userId: newUser.id, email: newUser.email, role: newUser.role },
+        JWT_SECRET_KEY_EMAIL_VERIFICATION!,
+        { expiresIn: "1d" }
+      );
+
       await emailService.sendWelcomeEmail(
-        newUser.id,
         newUser.email,
-        newUser.name
+        newUser.name,
+        token
       );
     }
+  },
+
+  async verifyEmail(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (user.isEmailVerified) {
+      throw new Error("Email already verified");
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isEmailVerified: true,
+        emailVerificationToken: null, // Clear old token if any
+        emailVerificationExpiresAt: null,
+      },
+    });
+
+    await emailService.sendEmailVerifiedSuccess(user.email, user.name);
+  },
+
+  async resendVerificationEmail(email: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) throw new Error("User not found");
+    if (user.isEmailVerified) throw new Error("Email already verified");
+
+    // Create verification token (JWT)
+    const token = await createToken(
+      { userId: user.id, email: user.email, role: user.role },
+      JWT_SECRET_KEY_EMAIL_VERIFICATION!,
+      { expiresIn: "1d" }
+    );
+
+    await emailService.sendWelcomeEmail(
+      user.email,
+      user.name,
+      token
+    );
   },
 
   async login(input: LoginInput, req: Request): Promise<AuthResponse> {

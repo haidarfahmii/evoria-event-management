@@ -14,7 +14,11 @@ declare global {
 export function verifyToken(secretKey: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const token = req?.headers?.authorization?.split(" ")[1];
+      // Retrieve token from Authorization header (Bearer token) OR body OR query
+      const token =
+        req?.headers?.authorization?.split(" ")[1] ||
+        req?.body?.token ||
+        req?.query?.token;
 
       // validasi token ada?
       if (!token) {

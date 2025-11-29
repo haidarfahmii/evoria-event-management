@@ -7,7 +7,6 @@ import { MulterError } from "multer";
 import authRouter from "./routers/auth.route";
 import profileRouter from "./routers/profile.route";
 import dashboardRouter from "./routers/dashboard.route";
-import emailRouter from "./routers/email.route";
 import transactionRouter from "./routers/transaction.route";
 import { startCronJobs } from "./utils/corn.util";
 
@@ -28,7 +27,6 @@ app.use("/api/events", eventsRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/transactions", transactionRouter);
 app.use("/api/dashboard", dashboardRouter);
-app.use("/api/email", emailRouter);
 
 /*
   Middleware (Application Level)

@@ -121,13 +121,11 @@ export interface IDashboardService {
 export interface IEmailService {
   sendEmail(to: string, subject: string, html: string): Promise<void>;
   sendWelcomeEmail(
-    userId: string,
     userEmail: string,
-    userName: string
+    userName: string,
+    token: string
   ): Promise<void>;
   sendEmailVerifiedSuccess(userEmail: string, userName: string): Promise<void>;
-  verifyEmailToken(token: string): Promise<any>;
-  resendVerificationEmail(email: string): Promise<any>;
   sendTransactionCreated(transactionId: string): Promise<void>;
   sendPaymentReminder(transactionId: string): Promise<void>;
   sendTransactionAccepted(transactionId: string): Promise<void>;
