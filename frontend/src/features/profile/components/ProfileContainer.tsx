@@ -49,7 +49,7 @@ export default function ProfileContainer() {
     fetchProfileData();
   }, [router]);
 
-  // --- Handle Avatar Upload ---
+  // Handle uplaod avatar
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -116,7 +116,7 @@ export default function ProfileContainer() {
         {/* RIGHT COLUMN: Forms (Profile & Password) */}
         <div className="lg:col-span-2 space-y-6">
           <ProfileForm user={profile} onUpdateSuccess={handleUpdateSuccess} />
-
+          {/* card form change password */}
           <ChangePasswordForm />
         </div>
       </div>

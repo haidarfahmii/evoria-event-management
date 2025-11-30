@@ -74,13 +74,13 @@ export default function ProfileSidebar({
       </Card>
 
       {/* Rewards Card */}
-      <Card className="shadow-md border-0 overflow-hidden">
+      <Card className="shadow-md border-0 overflow-hidden py-0">
         <CardHeader className="bg-slate-900 text-white py-4">
           <CardTitle className="text-md flex items-center gap-2">
             <FiGift /> My Rewards
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-6 space-y-4">
+        <CardContent className="pt-2 pb-4 space-y-4">
           {/* Points */}
           <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-100">
             <div className="flex items-center gap-3">
