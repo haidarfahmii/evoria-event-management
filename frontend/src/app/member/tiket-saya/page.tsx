@@ -1,8 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import {
-  Search,
   Ticket,
   Calendar,
   MapPin,
@@ -16,10 +14,10 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import SidebarLayout from "@/components/SidebarLayout";
 import Image from "next/image";
+import { useState } from "react";
 
+// ... copy component constants & helper functions ...
 /**
  * ==========================================
  * 1. MOCK DATA & TYPES
@@ -380,12 +378,8 @@ const TicketCard = ({
   </div>
 );
 
-/**
- * ==========================================
- * 4. MAIN PAGE
- * ==========================================
- */
-export default function MyTransactionsPage() {
+export default function TiketSayaPage() {
+  // ... copy semua state & logic ...
   const [selectedTicket, setSelectedTicket] = useState<TicketItem | null>(null);
   const [activeTab, setActiveTab] = useState<
     "all" | "active" | "completed" | "canceled"
@@ -398,71 +392,69 @@ export default function MyTransactionsPage() {
       : MY_TICKETS.filter((t) => t.status === activeTab);
 
   return (
-    <SidebarLayout>
-      <div className="max-w-5xl mx-auto">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tiket Saya</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Kelola tiket dan lihat riwayat transaksi Anda.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium shadow-sm transition-all">
-              <Filter size={16} /> Filter Tanggal
-            </button>
-          </div>
+    // JANGAN gunakan <SidebarLayout> lagi, ganti div biasa atau Fragment
+    <div className="max-w-5xl mx-auto">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tiket Saya</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Kelola tiket dan lihat riwayat transaksi Anda.
+          </p>
         </div>
-
-        {/* Custom Tabs */}
-        <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar">
-          {[
-            { id: "active", label: "Aktif (1)" },
-            { id: "completed", label: "Selesai" },
-            { id: "canceled", label: "Dibatalkan" },
-            { id: "all", label: "Semua Tiket" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-6 py-3 text-sm font-semibold capitalize whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? "border-[#00388D] text-[#00388D]"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Ticket List */}
-        <div className="space-y-4 pb-20">
-          {filteredTickets.length > 0 ? (
-            filteredTickets.map((ticket) => (
-              <TicketCard
-                key={ticket.id}
-                ticket={ticket}
-                onClick={() => setSelectedTicket(ticket)}
-              />
-            ))
-          ) : (
-            <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                <Ticket size={32} />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Belum ada tiket
-              </h3>
-              <p className="text-gray-500 text-sm">
-                Anda belum memiliki tiket di status ini.
-              </p>
-            </div>
-          )}
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium shadow-sm transition-all">
+            <Filter size={16} /> Filter Tanggal
+          </button>
         </div>
       </div>
 
+      {/* Custom Tabs */}
+      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar">
+        {[
+          { id: "active", label: "Aktif (1)" },
+          { id: "completed", label: "Selesai" },
+          { id: "canceled", label: "Dibatalkan" },
+          { id: "all", label: "Semua Tiket" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-6 py-3 text-sm font-semibold capitalize whitespace-nowrap border-b-2 transition-colors ${
+              activeTab === tab.id
+                ? "border-[#00388D] text-[#00388D]"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Ticket List */}
+      <div className="space-y-4 pb-20">
+        {filteredTickets.length > 0 ? (
+          filteredTickets.map((ticket) => (
+            <TicketCard
+              key={ticket.id}
+              ticket={ticket}
+              onClick={() => setSelectedTicket(ticket)}
+            />
+          ))
+        ) : (
+          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+              <Ticket size={32} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Belum ada tiket
+            </h3>
+            <p className="text-gray-500 text-sm">
+              Anda belum memiliki tiket di status ini.
+            </p>
+          </div>
+        )}
+      </div>
       {/* E-Ticket Modal Overlay */}
       {selectedTicket && (
         <TicketDetailModal
@@ -470,6 +462,6 @@ export default function MyTransactionsPage() {
           onClose={() => setSelectedTicket(null)}
         />
       )}
-    </SidebarLayout>
+    </div>
   );
 }

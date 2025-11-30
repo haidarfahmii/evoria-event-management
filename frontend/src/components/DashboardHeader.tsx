@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import {
   ChevronRight,
   Home,
@@ -21,17 +21,14 @@ import { Role } from "@/@types";
 const pathLabels: Record<string, string> = {
   profile: "Profil Saya",
   transactions: "Transaksi",
-  "my-transactions": "Tiket Saya",
   settings: "Pengaturan",
   dashboard: "Organizer Dashboard",
   "create-event": "Buat Event",
-  "verify-email": "Verifikasi Email",
-  "change-password": "Ganti Password",
 };
 
 export default function DashboardHeader() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
 
   // Helper untuk generate breadcrumbs
@@ -42,7 +39,7 @@ export default function DashboardHeader() {
     // Split pathname menjadi array segment
     const asPathNestedRoutes = asPathWithoutQuery
       .split("/")
-      .filter((v) => v.length > 0);
+      .filter((v) => v.length > 0 && v !== "member");
 
     // Build array breadcrumb
     const crumblist = asPathNestedRoutes.map((subpath, idx) => {
@@ -66,6 +63,13 @@ export default function DashboardHeader() {
   const breadcrumbs = generateBreadcrumbs();
   const user = session?.user;
   const isOrganizer = user?.role === Role.ORGANIZER;
+
+  // Debugging: Cek di console browser apakah nama berubah saat update profil
+  useEffect(() => {
+    if (status === "authenticated") {
+      console.log("DashboardHeader Session Updated:", session?.user);
+    }
+  }, [session, status]);
 
   return (
     <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6  shadow-sm">
@@ -169,7 +173,10 @@ export default function DashboardHeader() {
             <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 border border-white shadow-sm overflow-hidden">
               {user?.image ? (
                 <img
-                  src={user.image}
+                  src={
+                    user.image ||
+                    "https://gravatar.com/avatar/62c98c481357fc079f4b1000bea954b1?s=400&d=robohash&r=x"
+                  }
                   alt={user.name || "User"}
                   className="w-full h-full object-cover"
                 />
@@ -206,7 +213,7 @@ export default function DashboardHeader() {
 
                 <div className="p-1">
                   <Link
-                    href="/profile"
+                    href="/member/profile/informasi-dasar"
                     className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
@@ -224,7 +231,7 @@ export default function DashboardHeader() {
                     </Link>
                   )}
                   <Link
-                    href="/settings"
+                    href="/member/profile/pengaturan"
                     className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
                     onClick={() => setIsUserMenuOpen(false)}
                   >

@@ -39,11 +39,12 @@ export default function ProfileSidebar({
               <Image
                 src={
                   user?.avatarUrl ||
-                  "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&auto=format&fit=crop&q=60"
+                  "https://cdn-icons-png.flaticon.com/512/6858/6858504.png"
                 }
                 alt="Avatar"
                 width={128}
                 height={128}
+                loading="eager"
                 className="object-cover w-full h-full"
               />
             </div>

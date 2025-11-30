@@ -3,6 +3,7 @@ import { updateProfileSchema } from "../schemas/profileValidationSchema";
 import { toast } from "react-toastify";
 import axiosInstance from "@/utils/axiosInstance";
 import { ProfileData } from "@/@types";
+import { useSession } from "next-auth/react";
 
 interface UseProfileFormProps {
   user: ProfileData | null;
@@ -17,6 +18,8 @@ const formatPhoneForInput = (phone: string) => {
 };
 
 export const useProfileForm = ({ user, onSuccess }: UseProfileFormProps) => {
+  const { data: session, update } = useSession();
+
   const formikProfile = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -42,6 +45,15 @@ export const useProfileForm = ({ user, onSuccess }: UseProfileFormProps) => {
         await axiosInstance.patch("/profile", {
           ...values,
           phoneNumber: formattedPhone,
+        });
+
+        // update session client
+        await update({
+          ...session,
+          user: {
+            ...session?.user,
+            name: values.name,
+          },
         });
 
         toast.success("Profile updated successfully!");

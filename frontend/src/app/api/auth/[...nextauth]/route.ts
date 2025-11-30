@@ -78,12 +78,22 @@ const nextAuthHandler = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user?.id;
         token.email = user?.email;
         token.role = user?.role;
+        token.name = user?.name;
         token.accessToken = user?.accessToken;
+      }
+
+      /**
+       * Handle trigger
+       * Saat session.update() dipanggil di client, trigger akan bernilai "update"
+       * dan session akan berisi data baru yang dikirim dari client
+       */
+      if (trigger === "update" && session?.name) {
+        token.name = session.name;
       }
 
       return token;
@@ -95,6 +105,7 @@ const nextAuthHandler = NextAuth({
         session.user.email = token.email;
         session.user.role = token.role;
         session.user.accessToken = token.accessToken;
+        session.user.name = token.name;
       }
 
       return session;

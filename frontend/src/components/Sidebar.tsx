@@ -1,57 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { Role } from "@/@types";
+import { SIDEBAR_ITEMS, SidebarGroup } from "@/config/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-  Compass,
-  User,
-  Settings,
-  Repeat,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { BsTicketPerforatedFill as Ticket } from "react-icons/bs";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const pathname = usePathname();
+  const { data: session } = useSession();
 
-  // Fungsi toggle sidebar
+  // menentukan menu sidebar berdasarkan role
+  const role = session?.user?.role;
+  const menuGroups: SidebarGroup[] =
+    role === Role.ORGANIZER ? SIDEBAR_ITEMS.organizer : SIDEBAR_ITEMS.customer;
+
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
-
-  // Definisi Menu
-  const menuItems = [
-    {
-      group: "Menu Utama",
-      items: [
-        { label: "Jelajah Event", href: "/", icon: Compass },
-        {
-          label: "Tiket Saya",
-          href: "/transactions/my-transactions",
-          icon: Ticket,
-        },
-      ],
-    },
-    {
-      group: "Akun",
-      items: [
-        { label: "Informasi Pribadi", href: "/profile", icon: User },
-        { label: "Pengaturan", href: "/settings", icon: Settings },
-      ],
-    },
-    {
-      group: "Mode User",
-      items: [
-        {
-          label: "Beralih ke Organizer",
-          href: "/dashboard", // Asumsi rute dashboard organizer
-          icon: Repeat,
-        },
-      ],
-    },
-  ];
 
   return (
     <aside
@@ -60,23 +28,26 @@ export default function Sidebar() {
         isCollapsed ? "w-20" : "w-64"
       )}
     >
-      {/* 1. Header / Logo */}
       <div className="h-16 flex items-center justify-center border-b border-slate-800">
         {isCollapsed ? (
-          <div className="font-bold text-xl bg-linear-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-            E
-          </div>
+          <Link href="/">
+            <div className="font-bold text-xl bg-linear-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+              E
+            </div>
+          </Link>
         ) : (
-          <div className="font-bold text-2xl tracking-tight">
-            <span className="text-white">Evoria</span>
-            <span className="text-blue-500">.</span>
-          </div>
+          <Link href="/">
+            <div className="font-bold text-2xl tracking-tight">
+              <span className="text-white">Evoria</span>
+              <span className="text-blue-500">.</span>
+            </div>
+          </Link>
         )}
       </div>
 
-      {/* 2. Navigation Items */}
+      {/* Navigation list */}
       <div className="flex-1 overflow-y-auto py-4 space-y-6">
-        {menuItems.map((group, groupIndex) => (
+        {menuGroups.map((group, groupIndex) => (
           <div key={groupIndex} className="px-3">
             {/* Group Label (Hidden when collapsed) */}
             {!isCollapsed && (
@@ -87,7 +58,13 @@ export default function Sidebar() {
 
             <div className="space-y-1">
               {group.items.map((item, itemIndex) => {
-                const isActive = pathname === item.href;
+                // Cek active state:
+                // 1. Exact match
+                // 2. Starts with (untuk sub-halaman), kecuali root '/' agar tidak selalu aktif
+                const isActive =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href);
                 return (
                   <Link
                     key={itemIndex}
@@ -131,14 +108,14 @@ export default function Sidebar() {
             </div>
 
             {/* Separator antar group jika collapsed agar lebih rapi */}
-            {isCollapsed && groupIndex < menuItems.length - 1 && (
+            {isCollapsed && groupIndex < menuGroups.length - 1 && (
               <div className="my-4 border-b border-slate-800 mx-2" />
             )}
           </div>
         ))}
       </div>
 
-      {/* 3. Footer / Collapse Button */}
+      {/* Footer / Collapse Button */}
       <div className="p-4 border-t border-slate-800">
         <button
           onClick={toggleSidebar}

@@ -22,10 +22,9 @@ export default function HeaderFooterProvider({
   // Kita menggunakan startsWith karena halaman profile sekarang punya layout sendiri (Sidebar)
   // dan halaman verifikasi/reset password biasanya memiliki token dinamis di URL.
   const isPatternMatch =
-    pathname.startsWith("/profile") ||
+    pathname.startsWith("/member") ||
     pathname.startsWith("/verify-email") ||
-    pathname.startsWith("/reset-password") ||
-    pathname.startsWith("/transactions/my-transactions");
+    pathname.startsWith("/reset-password");
 
   const shouldHide = isExactMatch || isPatternMatch;
 

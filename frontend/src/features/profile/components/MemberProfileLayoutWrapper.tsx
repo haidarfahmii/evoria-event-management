@@ -1,55 +1,45 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { toast, ToastContainer } from "react-toastify";
+import { PointData, ProfileData, CouponData } from "@/@types";
 import axiosInstance from "@/utils/axiosInstance";
-import { ProfileData, PointData, CouponData } from "@/@types";
-
-// Import komponen hasil refactoring
-import ProfileForm from "./ProfileForm";
-import ChangePasswordForm from "./ChangePasswordForm";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
 import ProfileSidebar from "./ProfileSidebar";
 
-export default function ProfileContainer() {
-  const router = useRouter();
+export default function MemberProfileLayoutWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // State Management
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [points, setPoints] = useState<PointData | null>(null);
   const [coupons, setCoupons] = useState<CouponData | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
-  // --- Fetch Data ---
   useEffect(() => {
-    const fetchProfileData = async () => {
+    const fetchData = async () => {
       try {
         const [profileRes, pointsRes, couponsRes] = await Promise.all([
           axiosInstance.get("/profile"),
           axiosInstance.get("/profile/points"),
           axiosInstance.get("/profile/coupons"),
         ]);
-
         setProfile(profileRes.data.data);
         setPoints(pointsRes.data.data);
         setCoupons(couponsRes.data.data);
-      } catch (error: any) {
-        console.error("Error fetching profile:", error);
-        // Jika token expired/tidak ada, redirect ke login
-        if (error.response?.status === 401) {
-          router.push("/login");
-        }
+      } catch (error) {
+        console.error("Error loading profile", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfileData();
-  }, [router]);
+    fetchData();
+  }, []);
 
-  // Handle uplaod avatar
+  // handle upload avatar user
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -95,30 +85,24 @@ export default function ProfileContainer() {
       </div>
     );
   }
-
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
-      <ToastContainer position="bottom-right" />
+    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Sidebar Kiri: Avatar & Rewards */}
+      <div className="space-y-6">
+        <ProfileSidebar
+          user={profile}
+          points={points}
+          coupons={coupons}
+          isUploading={isUploading}
+          onAvatarChange={handleAvatarChange}
+          fileInputRef={fileInputRef}
+        />
+      </div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT COLUMN: Sidebar (Avatar & Rewards) */}
-        <div className="space-y-6">
-          <ProfileSidebar
-            user={profile}
-            points={points}
-            coupons={coupons}
-            isUploading={isUploading}
-            onAvatarChange={handleAvatarChange}
-            fileInputRef={fileInputRef}
-          />
-        </div>
-
-        {/* RIGHT COLUMN: Forms (Profile & Password) */}
-        <div className="lg:col-span-2 space-y-6">
-          <ProfileForm user={profile} onUpdateSuccess={handleUpdateSuccess} />
-          {/* card form change password */}
-          <ChangePasswordForm />
-        </div>
+      {/* Konten Kanan: Form (Informasi Dasar atau Pengaturan) */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Kita clone element children untuk pass props 'user' ke form di bawahnya jika perlu */}
+        {children}
       </div>
     </div>
   );
