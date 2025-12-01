@@ -64,7 +64,8 @@ export const eventsService = {
                     select: {
                         id: true,
                         name: true,
-                        email: true
+                        email: true,
+                        avatarUrl: true,
                     }
                 }
             }
