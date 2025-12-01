@@ -12,6 +12,9 @@ export const profileService = {
         id: true,
         name: true,
         email: true,
+        phoneNumber: true,
+        birthDate: true,
+        gender: true,
         role: true,
         avatarUrl: true,
         referralCode: true,
@@ -30,19 +33,55 @@ export const profileService = {
 
   async updateProfile(
     userId: User["id"],
-    data: Partial<Pick<User, "name" | "avatarUrl">>
+    data: Partial<
+      Pick<User, "name" | "avatarUrl" | "phoneNumber" | "birthDate" | "gender">
+    >
   ) {
+    // format nomor hp selalu diawali '62'
+    let finalPhoneNumber = data.phoneNumber;
+
+    if (finalPhoneNumber) {
+      // menghapus karakter non-digit (jaga-jaga ada spasi/-)
+      finalPhoneNumber = finalPhoneNumber.replace(/\D/g, "");
+
+      // jika nomor diawali '0', ubah jadi '62'
+      if (finalPhoneNumber.startsWith("0")) {
+        finalPhoneNumber = "62" + finalPhoneNumber.slice(1);
+      }
+
+      // Jika diawali '620', hapus '0' nya (menjadi '62' + sisa nomor)
+      // Ini menangani kasus jika frontend mengirim raw "6208..."
+      if (finalPhoneNumber.startsWith("620")) {
+        finalPhoneNumber = "62" + finalPhoneNumber.slice(3);
+      }
+
+      // cek duplikasi nomor hp (pastikan nomor ini belum dipakai orang lain)
+      const existingPhone = await prisma.user.findUnique({
+        where: { phoneNumber: finalPhoneNumber },
+      });
+
+      if (existingPhone && existingPhone.id !== userId) {
+        throw new Error("Phone number already in use");
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
         ...(data.name && { name: data.name }),
         ...(data.avatarUrl && { avatarUrl: data.avatarUrl }),
+        ...(finalPhoneNumber && { phoneNumber: finalPhoneNumber }),
+        ...(data.birthDate && { birthDate: data.birthDate }),
+        ...(data.gender && { gender: data.gender }),
       },
       select: {
         id: true,
         name: true,
         email: true,
         avatarUrl: true,
+        phoneNumber: true,
+        birthDate: true,
+        gender: true,
       },
     });
 

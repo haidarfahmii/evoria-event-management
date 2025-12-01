@@ -7,6 +7,22 @@ export const updateProfileValidator = [
     .withMessage("Name must be a string")
     .isLength({ min: 3 })
     .withMessage("Name must be at least 3 characters long"),
+  body("phoneNumber")
+    .optional()
+    .isString()
+    .matches(/^[0-9]+$/)
+    .withMessage("Phone number must contain only numbers")
+    .isLength({ min: 10, max: 15 })
+    .withMessage("Phone number length is invalid"),
+  body("gender")
+    .optional()
+    .isIn(["MALE", "FEMALE"])
+    .withMessage("Gender must be either MALE or FEMALE"),
+  body("birthDate")
+    .optional()
+    .isISO8601()
+    .toDate() // Konversi string ke Date object otomatis
+    .withMessage("Birth date must be a valid date (YYYY-MM-DD)"),
 ];
 
 export const changePasswordValidator = [

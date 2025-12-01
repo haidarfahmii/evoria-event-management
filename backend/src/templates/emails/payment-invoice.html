@@ -1,0 +1,64 @@
+<html>
+  <head>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px
+      solid #ddd; } .header { background-color: #f8f9fa; padding: 10px;
+      text-align: center; } .details { margin-top: 20px; } .table { width: 100%;
+      border-collapse: collapse; margin-top: 10px; } .table th, .table td {
+      border: 1px solid #ddd; padding: 8px; text-align: left; } .total {
+      font-weight: bold; text-align: right; margin-top: 10px; } .status {
+      font-weight: bold; color: #e67e22; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>Transaction Invoice</h2>
+        <p>Order #{{transactionId}}</p>
+      </div>
+
+      <div class="details">
+        <p>Hi {{name}},</p>
+        <p>Thank you for your purchase. Here are the details of your
+          transaction:</p>
+
+        <p><strong>Event:</strong> {{eventName}}</p>
+        <p><strong>Date:</strong> {{eventDate}}</p>
+        <p><strong>Venue:</strong> {{venue}}</p>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ticketName}}</td>
+              <td>{{qty}}</td>
+              <td>{{price}}</td>
+              <td>{{total}}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {{#if discount}}
+          <p style="text-align: right;">Discount: -{{discount}}</p>
+        {{/if}}
+
+        <div class="total">
+          <p>Final Total: {{finalPrice}}</p>
+        </div>
+
+        <p>Status: <span class="status">{{status}}</span></p>
+
+        <p>Please upload your payment proof within 2 hours to complete the
+          transaction.</p>
+      </div>
+    </div>
+  </body>
+</html>

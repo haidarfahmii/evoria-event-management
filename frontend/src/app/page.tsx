@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { FiSearch, FiMapPin, FiFilter } from "react-icons/fi";
 import { useEffect, useState } from "react";
@@ -7,7 +7,6 @@ import axiosInstance from "@/utils/axiosInstance";
 import categoriesData from "./../data/categoriesData.json"
 import citiesData from "./../data/citiesData.json"
 export default function Home() {
-
   const categories = categoriesData.categories;
 
   const cities = citiesData.cities;
@@ -24,22 +23,21 @@ export default function Home() {
       setEvents(response?.data?.data)
 
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
-  }
+  };
 
   useEffect(() => {
     onGetAllEvents();
-  }, [])
+  }, []);
 
   // Filtering
-  const filteredEvents = events.filter(event => {
+  const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.name?.toLowerCase().includes(search.toLowerCase()) ||
       event.description?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesCity =
-      selectedCity === "All" || event.city === selectedCity;
+    const matchesCity = selectedCity === "All" || event.city === selectedCity;
 
     const matchesCat =
       selectedCategory === "All" || event.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -50,19 +48,21 @@ export default function Home() {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-
   return (
     <main>
-
       {/* Hero section */}
       <section className="bg-blue-200">
         <div className="max-w-6xl mx-auto flex flex-col gap-5 px-4 py-20">
-          <h1 className="text-4xl font-bold">Discover Unforgettable Experiences</h1>
-          <h2 className="text-xl">From music festivals in Bali to tech summits in Jakarta. Find your next adventure with Evoria.</h2>
+          <h1 className="text-4xl font-bold">
+            Discover Unforgettable Experiences
+          </h1>
+          <h2 className="text-xl">
+            From music festivals in Bali to tech summits in Jakarta. Find your
+            next adventure with Evoria.
+          </h2>
 
           {/* Search Bar */}
           <div className="bg-white p-2 rounded-xl shadow-2xl max-w-3xl flex flex-col md:flex-row gap-2">
-
             {/* Search Input */}
             <div className="flex-1 relative">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -82,8 +82,10 @@ export default function Home() {
                 onChange={(e) => setSelectedCity(e.target.value)}
               >
                 <option value="All">All Cities</option>
-                {cities?.map(city => (
-                  <option key={city} value={city}>{city}</option>
+                {cities?.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
                 ))}
               </select>
             </div>
@@ -115,16 +117,15 @@ export default function Home() {
               All
             </button>
 
-            {categories.map(cat => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === cat
-                  ?
-                  'bg-slate-900 text-white shadow-md hover:bg-slate-800'
-                  :
-                  'bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600'
-                  }`}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  selectedCategory === cat
+                    ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
+                    : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
+                }`}
               >
                 {cat}
               </button>
@@ -140,10 +141,7 @@ export default function Home() {
         ) : (
           <EventCard events={filteredEvents} />
         )}
-
-
       </section>
-
     </main>
   );
 }
