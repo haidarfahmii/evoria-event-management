@@ -1,5 +1,6 @@
 import { FiCalendar, FiMap } from 'react-icons/fi';
 import Image from "next/image";
+import Link from 'next/link';
 
 type TicketType = {
     id: number;
@@ -17,6 +18,7 @@ type Event = {
     venue: string;
     startDate: string;
     imageUrl: string;
+    slug: string;
     ticketTypes: TicketType[];
 };
 
@@ -30,7 +32,8 @@ export default function EventCard({ events }: { events: Event[] }) {
                     const cheapestTicket = [...event.ticketTypes].sort((a, b) => a.price - b.price)[0];
 
                     return (
-                        <div
+                        <Link
+                        href={`/event/${event.slug}`}
                             key={event.id}
                             className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer border border-slate-100 flex flex-col h-full"
                             onClick={() => console.log("Selected:", event)}
@@ -73,7 +76,7 @@ export default function EventCard({ events }: { events: Event[] }) {
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     )
                 })}
 
