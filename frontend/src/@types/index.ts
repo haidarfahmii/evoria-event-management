@@ -47,3 +47,34 @@ export interface ApiResponse<T = any> {
   message: string;
   data?: T;
 }
+
+export interface ProfileData {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  phoneNumber?: string;
+  birthDate?: string;
+  gender?: Gender;
+  avatarUrl?: string;
+  referralCode?: string;
+}
+
+export interface PointData {
+  totalPoints: number;
+  points: {
+    id: string;
+    amount: number;
+    expiresAt: string;
+  }[];
+}
+
+export interface CouponData {
+  totalCoupons: number;
+  coupons: {
+    id: string;
+    code: string;
+    percentage: number;
+    expiresAt: string;
+  }[];
+}

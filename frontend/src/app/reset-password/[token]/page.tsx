@@ -8,11 +8,10 @@ import { resetPasswordSchema } from "@/features/auth/schemas/authValidationSchem
 import axiosInstance from "@/utils/axiosInstance";
 import { useState, Suspense } from "react"; // Suspense dibutuhkan untuk useSearchParams
 import { Loader2 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 function ResetPasswordForm() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const { token } = useParams();
   const router = useRouter();
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -34,10 +33,17 @@ function ResetPasswordForm() {
       setError("");
 
       try {
-        await axiosInstance.post("/auth/reset-password", {
-          token,
-          password: values.password,
-        });
+        await axiosInstance.patch(
+          "/auth/reset-password",
+          {
+            newPassword: values.password,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         alert("Password reset successful! Please login.");
         router.push("/login");

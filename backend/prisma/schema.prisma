@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
@@ -45,14 +45,8 @@ model User {
   gender        Gender?   
   avatarUrl     String?
 
-  // Reset Password Fields
-  resetPasswordToken   String?
-  resetPasswordExpiresAt DateTime?
-
   // email verification fields
   isEmailVerified             Boolean     @default(false)
-  emailVerificationToken      String?     @unique
-  emailVerificationExpiresAt  DateTime?
 
   // Login Tracking Fields
   lastLoginAt             DateTime? // Track kapan terakhir login
@@ -62,7 +56,8 @@ model User {
   // Referral System
   referralCode     String  @unique
   referredByUserId String?
-  // *** Self-relation yang benar
+  
+  // Self-relation
   referredBy       User?   @relation("UserReferrals", fields: [referredByUserId], references: [id])
   referrals        User[]  @relation("UserReferrals")
 

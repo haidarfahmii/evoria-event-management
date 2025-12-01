@@ -3,7 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    domains: ["images.unsplash.com", "images.pexels.com"],
+    domains: [
+      "images.unsplash.com",
+      "images.pexels.com",
+      "res.cloudinary.com",
+      "cdn-icons-png.flaticon.com",
+    ],
     remotePatterns: [
       {
         protocol: "https",
@@ -12,6 +17,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.pexels.com",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn-icons-png.flaticon.com",
       },
     ],
   },

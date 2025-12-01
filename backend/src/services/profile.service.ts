@@ -49,6 +49,12 @@ export const profileService = {
         finalPhoneNumber = "62" + finalPhoneNumber.slice(1);
       }
 
+      // Jika diawali '620', hapus '0' nya (menjadi '62' + sisa nomor)
+      // Ini menangani kasus jika frontend mengirim raw "6208..."
+      if (finalPhoneNumber.startsWith("620")) {
+        finalPhoneNumber = "62" + finalPhoneNumber.slice(3);
+      }
+
       // cek duplikasi nomor hp (pastikan nomor ini belum dipakai orang lain)
       const existingPhone = await prisma.user.findUnique({
         where: { phoneNumber: finalPhoneNumber },

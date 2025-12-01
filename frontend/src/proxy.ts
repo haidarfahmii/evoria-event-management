@@ -16,8 +16,12 @@ export default withAuth(
     }
 
     // Protect Dashboard Routes: Only ORGANIZER can access
-    if (pathname.startsWith("/dashboard") && role !== "ORGANIZER") {
+    if (pathname.startsWith("/member/dashboard") && role !== "ORGANIZER") {
       return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    if (pathname.startsWith("/member/tiket-saya") && role !== "CUSTOMER") {
+      return NextResponse.redirect(new URL("/member/events", req.url));
     }
 
     return NextResponse.next();
@@ -41,5 +45,5 @@ export default withAuth(
 
 // Define which routes to protect
 export const config = {
-  matcher: ["/dashboard/:path*", "/profile/:path*", "/login", "/register"],
+  matcher: ["/member/:path*", "/profile/:path*", "/login", "/register"],
 };
