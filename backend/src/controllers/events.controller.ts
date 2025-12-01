@@ -5,12 +5,11 @@ import { AppError } from "../utils/app-error";
 function generateSlug(name: string): string {
     const base = name
         .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, "")   // remove special chars
+        .replace(/[^a-z0-9\s]/g, "")   // hapus karakter lain
         .trim()
-        .replace(/\s+/g, "_");         // spaces → _
+        .replace(/\s+/g, "-");         // tambah '-'
 
     const random = Math.random().toString(36).substring(2, 7);
-    // produces 5 random chars (letters + numbers)
 
     return `${base}_${random}`;
 }
@@ -87,6 +86,18 @@ const eventsController = {
         res.status(201).json({
             success: true,
             message: 'Get event detail successfull',
+            data: event
+        })
+    },
+
+    async getBySlug(req: Request, res: Response) {
+        const { slug } = req.params;
+
+        const event = await eventsService.getBySlug(slug)
+
+        res.status(201).json({
+            success: true,
+            message: 'Get event detail by slug successfull',
             data: event
         })
     },

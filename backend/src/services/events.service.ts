@@ -52,7 +52,21 @@ export const eventsService = {
     async get() {
         const events = await prisma.event.findMany({
             include: {
-                ticketTypes: true
+                ticketTypes: {
+                    select: {
+                        id: true,
+                        name: true,
+                        price: true,
+                        seats: true
+                    }
+                },
+                organizer: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                }
             }
         });
         return events;
@@ -64,8 +78,54 @@ export const eventsService = {
                 id
             },
             include: {
-                ticketTypes: true,
+                ticketTypes: {
+                    select: {
+                        id: true,
+                        name: true,
+                        price: true,
+                        seats: true
+                    }
+                },
+                organizer: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                }
+            }
+        })
+
+        if (!event) {
+            throw new Error("Event is not found");
+        }
+
+        return event;
+    },
+
+    async getBySlug(slug: string) {
+        const event = await prisma.event.findFirst({
+            where: {
+                slug
             },
+            include: {
+                ticketTypes: {
+                    select: {
+                        id: true,
+                        name: true,
+                        price: true,
+                        seats: true
+                    }
+                },
+                organizer: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        avatarUrl: true,
+                    }
+                }
+            }
         })
 
         if (!event) {

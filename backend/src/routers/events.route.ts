@@ -23,6 +23,7 @@ router.post('/',
     
 router.get('/', eventsController.getAll)
 router.get('/:id', eventsController.getById)
+router.get('/detail/:slug', eventsController.getBySlug)
 router.put('/:id', eventsController.update)
 router.delete('/:id', eventsController.delete)
 
