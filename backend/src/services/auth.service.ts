@@ -209,6 +209,7 @@ export const authService = {
         name: findUser.name,
         email: findUser.email,
         role: findUser.role,
+        avatarUrl: findUser.avatarUrl,
       },
     };
   },
