@@ -235,10 +235,16 @@ export default function EventsForm() {
                     <MdImage size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
 
                     <input
-                        type="text"
+                        type="file"
                         name="imageUrl"
-                        value={formik.values.imageUrl}
-                        onChange={formik.handleChange}
+                        onChange={(e) => {
+                                if (e.currentTarget.files) {
+                                    formik.setFieldValue(
+                                        'imageUrl',
+                                        Array.from(e.currentTarget.files)
+                                    )
+                                }
+                            }}
                         onBlur={formik.handleBlur}
                         className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 

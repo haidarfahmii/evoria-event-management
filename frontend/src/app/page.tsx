@@ -4,8 +4,8 @@ import { FiSearch, FiMapPin, FiFilter } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import EventCard from "@/components/EventCard";
 import axiosInstance from "@/utils/axiosInstance";
-import categoriesData from "./../data/categoriesData.json";
-import citiesData from "./../data/citiesData.json";
+import categoriesData from "./../data/categoriesData.json"
+import citiesData from "./../data/citiesData.json"
 export default function Home() {
   const categories = categoriesData.categories;
 
@@ -19,8 +19,9 @@ export default function Home() {
   // Fetch event from api
   const onGetAllEvents = async () => {
     try {
-      const response = await axiosInstance.get("/events");
-      setEvents(response?.data?.data);
+      const response = await axiosInstance.get('/events');
+      setEvents(response?.data?.data)
+
     } catch (error) {
       console.log(error);
     }
@@ -39,10 +40,12 @@ export default function Home() {
     const matchesCity = selectedCity === "All" || event.city === selectedCity;
 
     const matchesCat =
-      selectedCategory === "All" ||
-      event.category === selectedCategory.toLowerCase();
+      selectedCategory === "All" || event.category.toLowerCase() === selectedCategory.toLowerCase();
 
     return matchesSearch && matchesCity && matchesCat;
+  }).
+  sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   return (
@@ -106,11 +109,10 @@ export default function Home() {
             </div>
             <button
               onClick={() => setSelectedCategory("All")}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                selectedCategory === "All"
-                  ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
-                  : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
-              }`}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === "All"
+                ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
+                : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
+                }`}
             >
               All
             </button>
