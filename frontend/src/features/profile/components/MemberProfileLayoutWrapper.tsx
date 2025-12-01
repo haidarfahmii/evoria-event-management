@@ -5,6 +5,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import ProfileSidebar from "./ProfileSidebar";
+import { useSession } from "next-auth/react";
 
 export default function MemberProfileLayoutWrapper({
   children,
@@ -17,6 +18,8 @@ export default function MemberProfileLayoutWrapper({
   const [points, setPoints] = useState<PointData | null>(null);
   const [coupons, setCoupons] = useState<CouponData | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+
+  const { update: updateSession } = useSession();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,11 +60,23 @@ export default function MemberProfileLayoutWrapper({
       setIsUploading(true);
       const res = await axiosInstance.patch("/profile/avatar", formData);
 
+      const newAvatarUrl = res.data.data.avatarUrl;
+
+      // debugging
+      console.log(
+        " [MemberProfileLayoutWrapper] New Avatar URL:",
+        newAvatarUrl
+      );
+
       // Update state profile lokal dengan URL avatar baru dari response
       setProfile((prev: any) => ({
         ...prev,
-        avatarUrl: res.data.data.avatarUrl,
+        avatarUrl: newAvatarUrl,
       }));
+
+      await updateSession({
+        avatarUrl: newAvatarUrl,
+      });
 
       toast.success("Avatar uploaded successfully!");
     } catch (error: any) {
@@ -72,9 +87,9 @@ export default function MemberProfileLayoutWrapper({
   };
 
   // --- Handle Update Name (Callback) ---
-  const handleUpdateSuccess = (updatedName: string) => {
-    setProfile((prev: any) => ({ ...prev, name: updatedName }));
-  };
+  // const handleUpdateSuccess = (updatedName: string) => {
+  //   setProfile((prev: any) => ({ ...prev, name: updatedName }));
+  // };
 
   if (loading) {
     return (

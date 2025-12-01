@@ -63,6 +63,7 @@ const nextAuthHandler = NextAuth({
               email: user.email,
               role: user.role,
               accessToken: token,
+              avatarUrl: user.avatarUrl,
             };
           }
           return null;
@@ -85,6 +86,7 @@ const nextAuthHandler = NextAuth({
         token.role = user?.role;
         token.name = user?.name;
         token.accessToken = user?.accessToken;
+        token.avatarUrl = user?.avatarUrl;
       }
 
       /**
@@ -92,8 +94,16 @@ const nextAuthHandler = NextAuth({
        * Saat session.update() dipanggil di client, trigger akan bernilai "update"
        * dan session akan berisi data baru yang dikirim dari client
        */
-      if (trigger === "update" && session?.name) {
-        token.name = session.name;
+      if (trigger === "update" && session) {
+        if (session.name !== undefined) {
+          token.name = session.name;
+          console.log("Token name updated:", token.name);
+        }
+
+        if (session?.avatarUrl !== undefined) {
+          token.avatarUrl = session.avatarUrl;
+          console.log("Token avatarUrl updated:", token.avatarUrl);
+        }
       }
 
       return token;
@@ -106,6 +116,7 @@ const nextAuthHandler = NextAuth({
         session.user.role = token.role;
         session.user.accessToken = token.accessToken;
         session.user.name = token.name;
+        session.user.avatarUrl = token.avatarUrl;
       }
 
       return session;

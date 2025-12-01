@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, useState, useEffect } from "react";
@@ -7,7 +8,6 @@ import {
   ChevronRight,
   Home,
   Bell,
-  Plus,
   User,
   LogOut,
   ChevronDown,
@@ -67,9 +67,18 @@ export default function DashboardHeader() {
   // Debugging: Cek di console browser apakah nama berubah saat update profil
   useEffect(() => {
     if (status === "authenticated") {
-      console.log("DashboardHeader Session Updated:", session?.user);
+      console.log("DashboardHeader Session Updated:", {
+        name: session?.user?.name,
+        avatarUrl: session?.user?.avatarUrl,
+        timeStamp: new Date().toISOString(),
+      });
     }
   }, [session, status]);
+
+  // debugging
+  useEffect(() => {
+    console.log("[Dashboard Header] initial Avatar URL:", user?.avatarUrl);
+  });
 
   return (
     <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6  shadow-sm">
@@ -171,13 +180,15 @@ export default function DashboardHeader() {
 
             {/* Avatar */}
             <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 border border-white shadow-sm overflow-hidden">
-              {user?.image ? (
-                <img
+              {user?.avatarUrl ? (
+                <Image
                   src={
-                    user.image ||
+                    user.avatarUrl ||
                     "https://gravatar.com/avatar/62c98c481357fc079f4b1000bea954b1?s=400&d=robohash&r=x"
                   }
                   alt={user.name || "User"}
+                  width={20}
+                  height={20}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -212,6 +223,16 @@ export default function DashboardHeader() {
                 </div>
 
                 <div className="p-1">
+                  {isOrganizer && (
+                    <Link
+                      href="/member/dashboard"
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <Home size={16} />
+                      <span>Dashboard Organizer</span>
+                    </Link>
+                  )}
                   <Link
                     href="/member/profile/informasi-dasar"
                     className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
@@ -220,16 +241,7 @@ export default function DashboardHeader() {
                     <User size={16} />
                     <span>Profil Saya</span>
                   </Link>
-                  {isOrganizer && (
-                    <Link
-                      href="/dashboard"
-                      className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <Home size={16} />
-                      <span>Dashboard Organizer</span>
-                    </Link>
-                  )}
+
                   <Link
                     href="/member/profile/pengaturan"
                     className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
