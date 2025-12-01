@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Role } from "@/@types";
+import { timeStamp } from "console";
 
 // Mapping path URL ke nama yang lebih user-friendly (Bahasa Indonesia)
 const pathLabels: Record<string, string> = {
@@ -225,6 +226,7 @@ export default function DashboardHeader() {
                 <div className="p-1">
                   {isOrganizer && (
                     <Link
+                      href="/member/dashboard"
                       href="/member/dashboard"
                       className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
                       onClick={() => setIsUserMenuOpen(false)}
