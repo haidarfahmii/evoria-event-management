@@ -18,7 +18,7 @@ const formatPhoneForInput = (phone: string) => {
 };
 
 export const useProfileForm = ({ user, onSuccess }: UseProfileFormProps) => {
-  const { data: session, update } = useSession();
+  const { update } = useSession();
 
   const formikProfile = useFormik({
     enableReinitialize: true,
@@ -49,13 +49,8 @@ export const useProfileForm = ({ user, onSuccess }: UseProfileFormProps) => {
 
         // update session client
         await update({
-          ...session,
-          user: {
-            ...session?.user,
-            name: values.name,
-          },
+          name: values.name,
         });
-
         toast.success("Profile updated successfully!");
 
         // Update data lokal agar UI nama langsung berubah

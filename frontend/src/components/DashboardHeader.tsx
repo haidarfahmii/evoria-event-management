@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Role } from "@/@types";
+import { timeStamp } from "console";
 
 // Mapping path URL ke nama yang lebih user-friendly (Bahasa Indonesia)
 const pathLabels: Record<string, string> = {
@@ -67,7 +68,11 @@ export default function DashboardHeader() {
   // Debugging: Cek di console browser apakah nama berubah saat update profil
   useEffect(() => {
     if (status === "authenticated") {
-      console.log("DashboardHeader Session Updated:", session?.user);
+      console.log("DashboardHeader Session Updated:", {
+        name: session?.user?.name,
+        avatarUrl: session?.user?.avatarUrl,
+        timeStamp: new Date().toISOString(),
+      });
     }
   }, [session, status]);
 
@@ -171,12 +176,9 @@ export default function DashboardHeader() {
 
             {/* Avatar */}
             <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 border border-white shadow-sm overflow-hidden">
-              {user?.image ? (
+              {user?.avatarUrl ? (
                 <img
-                  src={
-                    user.image ||
-                    "https://gravatar.com/avatar/62c98c481357fc079f4b1000bea954b1?s=400&d=robohash&r=x"
-                  }
+                  src={user?.avatarUrl}
                   alt={user.name || "User"}
                   className="w-full h-full object-cover"
                 />
@@ -218,11 +220,11 @@ export default function DashboardHeader() {
                     onClick={() => setIsUserMenuOpen(false)}
                   >
                     <User size={16} />
-                    <span>Profil Saya</span>
+                    <span>Informasi Pribadi</span>
                   </Link>
                   {isOrganizer && (
                     <Link
-                      href="/dashboard"
+                      href="/member/dashboard"
                       className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
                       onClick={() => setIsUserMenuOpen(false)}
                     >

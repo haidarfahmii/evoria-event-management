@@ -36,7 +36,7 @@ export default function useFormLogin() {
 
         // cek role dan redirect sesuai hak aksesnya
         if (session?.user?.role === "ORGANIZER") {
-          router.push("/dashboard");
+          router.push("/member/dashboard");
         } else {
           router.push("/");
         }
