@@ -94,21 +94,13 @@ const nextAuthHandler = NextAuth({
        * Saat session.update() dipanggil di client, trigger akan bernilai "update"
        * dan session akan berisi data baru yang dikirim dari client
        */
-<<<<<<< HEAD
       if (trigger === "update" && session) {
-=======
-      if (trigger === "update" && session?.name) {
->>>>>>> ff5c6b42643a277aafeb1fa9b2d99f952cc31d0f
         if (session.name !== undefined) {
           token.name = session.name;
           console.log("Token name updated:", token.name);
         }
 
-<<<<<<< HEAD
         if (session?.avatarUrl !== undefined) {
-=======
-        if (session.avatarUrl !== undefined) {
->>>>>>> ff5c6b42643a277aafeb1fa9b2d99f952cc31d0f
           token.avatarUrl = session.avatarUrl;
           console.log("Token avatarUrl updated:", token.avatarUrl);
         }
@@ -124,12 +116,7 @@ const nextAuthHandler = NextAuth({
         session.user.role = token.role;
         session.user.accessToken = token.accessToken;
         session.user.name = token.name;
-<<<<<<< HEAD
         session.user.avatarUrl = token.avatarUrl;
-=======
-        session.user.avatarUrl = token.avatarUrl as string;
-        console.log("Session avatarUrl updated:", session.user.avatarUrl);
->>>>>>> ff5c6b42643a277aafeb1fa9b2d99f952cc31d0f
       }
 
       return session;

@@ -227,7 +227,6 @@ export default function DashboardHeader() {
                   {isOrganizer && (
                     <Link
                       href="/member/dashboard"
-                      href="/member/dashboard"
                       className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
