@@ -19,6 +19,11 @@ type Event = {
     startDate: string;
     imageUrl: string;
     slug: string;
+    organizer: {
+        name: string;
+        email: string;
+        avatarUrl: string;
+    };
     ticketTypes: TicketType[];
 };
 
@@ -33,17 +38,18 @@ export default function EventCard({ events }: { events: Event[] }) {
 
                     return (
                         <Link
-                        href={`/event/${event.slug}`}
+                            href={`/event/${event.slug}`}
                             key={event.id}
                             className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer border border-slate-100 flex flex-col h-full"
                             onClick={() => console.log("Selected:", event)}
                         >
+                            {/* Event Image */}
                             <div className="relative h-48 overflow-hidden">
                                 <Image
                                     src={event.imageUrl}
                                     alt={event.name}
-                                    width={200}
-                                    height={200}
+                                    width={400} // Increased slightly for better resolution on retina
+                                    height={400}
                                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                                 />
                                 <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide text-slate-800 shadow-sm">
@@ -57,6 +63,7 @@ export default function EventCard({ events }: { events: Event[] }) {
                                         {event.name}
                                     </h3>
 
+                                    {/* Date and Location */}
                                     <div className="space-y-2 mb-4">
                                         <div className="flex items-center text-slate-500 text-sm">
                                             <FiCalendar className="w-4 h-4 mr-2 text-primary-500" />
@@ -64,12 +71,29 @@ export default function EventCard({ events }: { events: Event[] }) {
                                         </div>
                                         <div className="flex items-center text-slate-500 text-sm">
                                             <FiMap className="w-4 h-4 mr-2 text-primary-500" />
-                                            <span>{event.city} {event.venue}</span>
+                                            <span className="line-clamp-1">{event.city} • {event.venue}</span>
                                         </div>
                                     </div>
+                                    
                                 </div>
+                                {/* Organized */}
+                                    <div className="flex items-center gap-2 mt-3 mb-4 pt-3 border-t border-slate-100 border-dashed">
+                                        <div className="relative w-6 h-6 rounded-full overflow-hidden border border-slate-200 bg-slate-100">
+                                            <Image
+                                                src={event?.organizer?.avatarUrl || "https://images.unsplash.com/photo-1654110455429-cf322b40a906?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+                                                alt={event.organizer.name}
+                                                fill
+                                                className="object-cover"
+                                                sizes="24px"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-medium text-slate-600 truncate">
+                                            By {event.organizer.name}
+                                        </span>
+                                    </div>
 
-                                <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                                {/* Price Footer */}
+                                <div className="mt-auto pt-3 border-t border-slate-100 flex justify-between items-center">
                                     <span className="text-slate-400 text-xs font-medium">Starts from</span>
                                     <span className="text-primary-700 font-bold text-lg">
                                         Rp {cheapestTicket?.price.toLocaleString('id-ID')}
@@ -79,7 +103,6 @@ export default function EventCard({ events }: { events: Event[] }) {
                         </Link>
                     )
                 })}
-
             </div>
         </div>
     )
