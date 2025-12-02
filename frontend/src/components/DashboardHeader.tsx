@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Role } from "@/@types";
-import { timeStamp } from "console";
 
 // Mapping path URL ke nama yang lebih user-friendly (Bahasa Indonesia)
 const pathLabels: Record<string, string> = {

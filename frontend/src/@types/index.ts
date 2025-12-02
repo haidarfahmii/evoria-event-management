@@ -8,6 +8,15 @@ export enum Gender {
   FEMALE = "FEMALE",
 }
 
+export enum TransactionStatus {
+  WAITING_PAYMENT = "WAITING_PAYMENT",
+  WAITING_CONFIRMATION = "WAITING_CONFIRMATION",
+  DONE = "DONE",
+  CANCELLED = "CANCELED",
+  REJECTED = "REJECTED",
+  EXPIRED = "EXPIRED",
+}
+
 export interface RegisterFormValues {
   name: string;
   email: string;
