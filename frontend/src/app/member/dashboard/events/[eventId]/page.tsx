@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useBreadcrumb } from "@/context/BreadcrumbContext";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -69,6 +70,8 @@ export default function EventReportPage() {
   const params = useParams();
   const eventId = params.eventId as string;
 
+  const { setLabel } = useBreadcrumb();
+
   const [event, setEvent] = useState<Event | null>(null);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +100,10 @@ export default function EventReportPage() {
       ]);
 
       const currentEvent = eventsData.find((e) => e.id === eventId);
-      if (currentEvent) setEvent(currentEvent);
+      if (currentEvent) {
+        setEvent(currentEvent);
+        setLabel(eventId, currentEvent.name);
+      }
 
       // Pastikan trxData adalah array
       setTransactions(Array.isArray(trxData) ? trxData : []);
