@@ -76,7 +76,7 @@ export const eventFormValidationSchema = yup.object().shape({
                     .number()
                     .required('Price is required')
                     .typeError('Price must be a number')
-                    .positive('Price must be greater than 0'),
+                    .min(0, 'Price cannot be negative'),
                 seats: yup
                     .number()
                     .required('Number of seats is required')
