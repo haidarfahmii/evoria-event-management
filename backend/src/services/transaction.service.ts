@@ -7,8 +7,10 @@ import {
   TransactionSummary,
   RollbackResult,
   TransactionExpiredError,
+  CreatePromotionDTO,
+  PromotionSummary
 } from "../@types/transaction.index";
-import { Transaction, TransactionStatus } from "../generated/prisma/client";
+import { Transaction, TransactionStatus, Promotion, Prisma } from "../generated/prisma/client";
 import { AppError } from "../utils/app-error";
 import { emailService } from "./notif-mail-transaction.service";
 
@@ -135,6 +137,19 @@ export const transactionService: ITransactionService = {
         } else if (promotion.type === "FLAT") {
           currentPrice -= promotion.value;
         }
+
+        if (promotion.maxUsage! < 0) {
+          throw AppError("Promotion maxUsage is reached!", 400)
+        }
+
+        await tx.promotion.update({
+          where: { id: promotionId },
+          data: {
+            maxUsage: {
+              decrement: qty,
+            },
+          },
+        });
       }
 
       // Handle Coupon
@@ -228,6 +243,23 @@ export const transactionService: ITransactionService = {
         },
       });
 
+      // Kondisi jika harga Ticket Price Free
+      const isFreeTransaction = finalPrice === 0;
+
+      let transactionStatus: TransactionStatus;
+      let expirationDate: Date | null = null;
+      let organizerDeadline: Date | null = null;
+
+      if (isFreeTransaction) {
+        // Jika free
+        transactionStatus = TransactionStatus.WAITING_CONFIRMATION;
+        organizerDeadline = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 3 days
+      } else {
+        // Jika berbayar
+        transactionStatus = TransactionStatus.WAITING_PAYMENT;
+        expirationDate = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
+      }
+
       // Create Transaction
       return await tx.transaction.create({
         data: {
@@ -240,8 +272,9 @@ export const transactionService: ITransactionService = {
           couponId,
           promotionId,
           finalPrice,
-          status: TransactionStatus.WAITING_PAYMENT,
-          expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours
+          status: transactionStatus,
+          expiresAt: expirationDate,
+          organizerResponseDeadline: organizerDeadline,
         },
       });
     });
@@ -335,11 +368,95 @@ export const transactionService: ITransactionService = {
     const t = await prisma.transaction.findUnique({ where: { id } });
     return t
       ? (
-          [
-            TransactionStatus.WAITING_PAYMENT,
-            TransactionStatus.WAITING_CONFIRMATION,
-          ] as TransactionStatus[]
-        ).includes(t.status)
+        [
+          TransactionStatus.WAITING_PAYMENT,
+          TransactionStatus.WAITING_CONFIRMATION,
+        ] as TransactionStatus[]
+      ).includes(t.status)
       : false;
+  },
+
+  async createPromotion(data: CreatePromotionDTO): Promise<Promotion> {
+    const {
+      eventId,
+      code,
+      type,
+      value,
+      maxUsage,
+      startDate,
+      endDate
+    } = data;
+
+    // 1. Validate: Event Existence
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+    });
+    if (!event) throw AppError("Event not found", 404);
+
+    // 2. Validate: Date Logic
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start >= end) {
+      throw AppError("End date must be greater than start date", 400);
+    }
+
+    // 3. Validate: Unique Code per Event
+    // Check if this code already exists for this specific event to avoid duplicates
+    const existingPromo = await prisma.promotion.findFirst({
+      where: {
+        code: code,
+        eventId: eventId,
+      },
+    });
+
+    if (existingPromo) {
+      throw AppError("Promotion code already exists for this event", 400);
+    }
+
+    return await prisma.promotion.create({
+      data: {
+        eventId,
+        code,
+        type,
+        value,
+        maxUsage,
+        startDate: start,
+        endDate: end,
+      },
+    });
+  },
+
+  async getPromotionByEventId(eventId: string): Promise<PromotionSummary[]> {
+    return await prisma.promotion.findMany({
+      where: {
+        eventId: eventId // Convert string to number (remove Number() if using UUIDs)
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  },
+
+  async getPromotionById(id: string): Promise<PromotionSummary | null> {
+    return await prisma.promotion.findUnique({
+      where: {
+        id: id
+      },
+    });
+  },
+
+  async deletePromotionByEventId(eventId: string): Promise<Prisma.BatchPayload> {
+    return await prisma.promotion.deleteMany({
+      where: {
+        eventId: eventId
+      }
+    });
+  },
+
+  async deletePromotionById(id: string): Promise<PromotionSummary | null> {
+    return await prisma.promotion.delete({
+      where: {
+        id: id
+      },
+    });
   },
 };

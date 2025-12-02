@@ -7,6 +7,7 @@ import { Role } from "../generated/prisma/client";
 import { multerCloudinaryUploader } from "../middlewares/multer.middleware";
 import { expressValidator } from "../middlewares/express-validator.middleware";
 import {
+  createPromotionValidator,
   createTransactionValidator,
   transactionIdValidator,
 } from "../validators/transaction.validator";
@@ -66,5 +67,35 @@ router.get(
   expressValidator,
   transactionController.getTransactionById
 );
+
+/**
+ * 5. Create Event Promotion by Organizer Id
+ * Access: Organizer with eventId only
+ */
+router.post('/:eventId/create-promotion',
+  verifyRole([Role.ORGANIZER]),
+  createPromotionValidator,
+  expressValidator,
+  transactionController.createPromotion
+)
+
+router.get('/promotion/event/:eventId',
+  verifyRole([Role.ORGANIZER]),
+  transactionController.getPromotionByEventId
+);
+
+router.delete('/promotion/event/:eventId',
+  verifyRole([Role.ORGANIZER]),
+  transactionController.deletePromotionByEventId
+);
+
+router.get('/promotion/:id',
+  verifyRole([Role.ORGANIZER]),
+  transactionController.getPromotionbyId
+)
+router.delete('/promotion/:id',
+  verifyRole([Role.ORGANIZER]),
+  transactionController.deletePromotionById
+)
 
 export default router;
