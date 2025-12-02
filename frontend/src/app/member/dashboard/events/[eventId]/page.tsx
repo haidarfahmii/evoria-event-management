@@ -1,5 +1,3 @@
-// frontend/src/app/member/dashboard/events/[eventId]/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -24,9 +22,9 @@ import {
   TransactionItem,
 } from "@/features/dashboard/services/dashboard.service";
 import { eventService, Event } from "@/features/events/services/event.service";
-import { TransactionStatus } from "@/@types"; // Import Enum
+import { TransactionStatus } from "@/@types";
 
-// ... (Helper formatRupiah tetap sama) ...
+// Helper Format Rupiah
 const formatRupiah = (number: number) => {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -35,7 +33,7 @@ const formatRupiah = (number: number) => {
   }).format(number);
 };
 
-// Helper Badge Status (Update Type)
+// Helper Badge Status
 const StatusBadge = ({ status }: { status: TransactionStatus }) => {
   const styles: Record<TransactionStatus, string> = {
     [TransactionStatus.WAITING_PAYMENT]:
@@ -76,12 +74,10 @@ export default function EventReportPage() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
-  // Update tipe filter agar bisa menerima 'ALL' atau Enum
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "ALL">(
     "ALL"
   );
 
-  // ... (State Modal & Fetch Logic tetap sama) ...
   // Modal Verification State
   const [selectedTrx, setSelectedTrx] = useState<TransactionItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -94,12 +90,17 @@ export default function EventReportPage() {
     try {
       setLoading(true);
 
-      const events = await eventService.getOrganizerEvents();
-      const currentEvent = events.find((e) => e.id === eventId);
+      // Gunakan Promise.all untuk fetch paralel agar lebih cepat
+      const [eventsData, trxData] = await Promise.all([
+        eventService.getOrganizerEvents(),
+        dashboardService.getEventTransactions(eventId),
+      ]);
+
+      const currentEvent = eventsData.find((e) => e.id === eventId);
       if (currentEvent) setEvent(currentEvent);
 
-      const trxData = await dashboardService.getEventTransaction(eventId);
-      setTransactions(trxData);
+      // Pastikan trxData adalah array
+      setTransactions(Array.isArray(trxData) ? trxData : []);
     } catch (error) {
       console.error("Error loading report:", error);
       toast.error("Gagal memuat laporan event");
@@ -113,7 +114,6 @@ export default function EventReportPage() {
   }, [eventId]);
 
   const handleVerify = async (action: "ACCEPT" | "REJECT") => {
-    // ... (Logic tetap sama, panggil service) ...
     if (!selectedTrx) return;
 
     if (action === "REJECT" && !rejectReason) {
@@ -133,7 +133,7 @@ export default function EventReportPage() {
 
       setIsModalOpen(false);
       setRejectReason("");
-      fetchData(); // Refresh data table
+      fetchData();
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Gagal memproses verifikasi"
@@ -143,7 +143,7 @@ export default function EventReportPage() {
     }
   };
 
-  // Kalkulasi Ringkasan (Update string compare ke Enum)
+  // Kalkulasi Ringkasan
   const stats = {
     revenue: transactions
       .filter((t) => t.status === TransactionStatus.DONE)
@@ -158,14 +158,15 @@ export default function EventReportPage() {
 
   // Filter Logic
   const filteredData = transactions.filter((t) => {
-    // Tambahkan pengecekan (t.userName || "") dan (t.id || "") agar aman
+    // Safety check: pastikan nilai string tidak null/undefined
     const userName = t.userName || "";
-    const transactionId = t.id || "";
+    const invoiceId = t.invoiceId || "";
     const searchTerm = search.toLowerCase();
 
     const matchesSearch =
       userName.toLowerCase().includes(searchTerm) ||
-      transactionId.toLowerCase().includes(searchTerm);
+      invoiceId.toLowerCase().includes(searchTerm);
+
     const matchesStatus = statusFilter === "ALL" || t.status === statusFilter;
 
     return matchesSearch && matchesStatus;
@@ -321,14 +322,14 @@ export default function EventReportPage() {
                       className="hover:bg-slate-50 transition-colors"
                     >
                       <td className="px-4 py-3 font-mono text-xs text-slate-500">
-                        {trx.id.substring(0, 8)}...
+                        {trx.invoiceId}
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-slate-800">
-                          {trx.userName}
+                          {trx.userName || "Unknown"}
                         </div>
                         <div className="text-xs text-slate-500">
-                          {trx.userEmail}
+                          {trx.userEmail || "-"}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-slate-600">
@@ -385,7 +386,7 @@ export default function EventReportPage() {
         </CardContent>
       </Card>
 
-      {/* Modal Verifikasi (Kode sama seperti sebelumnya, hanya memastikan selectedTrx bertipe TransactionItem) */}
+      {/* Modal Verifikasi */}
       {isModalOpen && selectedTrx && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">

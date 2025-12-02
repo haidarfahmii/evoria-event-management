@@ -11,6 +11,7 @@ import {
 import { Transaction, TransactionStatus } from "../generated/prisma/client";
 import { AppError } from "../utils/app-error";
 import { emailService } from "./notif-mail-transaction.service";
+import { generateInvoiceId } from "../utils/invoice-generator";
 
 export const transactionService: ITransactionService = {
   // Rollback Transaction
@@ -298,6 +299,7 @@ export const transactionService: ITransactionService = {
     // Manual mapping to match interface TransactionSummary
     return transactions.map((t) => ({
       ...t,
+      invoiceId: generateInvoiceId(t.id, t.createdAt),
       userName: t.user.name,
       userEmail: t.user.email,
       eventName: t.event.name,

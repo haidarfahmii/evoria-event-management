@@ -3,6 +3,7 @@ import { TransactionStatus } from "@/@types";
 
 export interface TransactionItem {
   id: string;
+  invoiceId: string;
   userName: string;
   userEmail: string;
   eventName: string;
@@ -17,7 +18,7 @@ export interface TransactionItem {
 
 export const dashboardService = {
   // ambil daftar transaksi yang spesifik untuk 1 event
-  getEventTransaction: async (eventId: string): Promise<TransactionItem[]> => {
+  getEventTransactions: async (eventId: string): Promise<TransactionItem[]> => {
     const response = await axiosInstance.get(
       `/dashboard/events/${eventId}/transactions`
     );

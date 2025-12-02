@@ -53,6 +53,7 @@ export interface TransactionWithRelations extends Transaction {
 
 export interface TransactionSummary {
   id: string;
+  invoiceId: string;
   userId: string;
   userName: string;
   userEmail: string;
