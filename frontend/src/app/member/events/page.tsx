@@ -15,6 +15,8 @@ import {
   Eye,
   Ticket,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -32,7 +34,8 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import axiosInstance from "@/utils/axiosInstance";
+
+// Import Service dan Interface
 import { eventService, Event } from "@/features/events/services/event.service";
 
 type TabType = "ACTIVE" | "PAST";
@@ -44,16 +47,20 @@ export default function ManageEventsPage() {
   const [search, setSearch] = useState<string>("");
   const [activeTab, setActiveTab] = useState<TabType>("ACTIVE");
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const EVENTS_PER_PAGE = 9; // Maksimal card per halaman
+
   // Fetch Events
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      // Menggunakan endpoint dashboard agar dapat statistik penjualan sekalian
       const data = await eventService.getOrganizerEvents();
-      setEvents(data);
+      setEvents(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching events:", error);
       toast.error("Gagal memuat data event.");
+      setEvents([]); // Fallback ke array kosong jika error
     } finally {
       setLoading(false);
     }
@@ -62,6 +69,11 @@ export default function ManageEventsPage() {
   useEffect(() => {
     fetchEvents();
   }, []);
+
+  // Reset ke halaman 1 setiap kali tab atau search berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, search]);
 
   // Handle Delete
   const handleDelete = async (id: string) => {
@@ -73,7 +85,7 @@ export default function ManageEventsPage() {
       return;
 
     try {
-      await axiosInstance.delete(`/events/${id}`);
+      await eventService.deleteEvent(id);
       toast.success("Event berhasil dihapus");
       fetchEvents(); // Refresh data
     } catch (error: any) {
@@ -81,8 +93,9 @@ export default function ManageEventsPage() {
     }
   };
 
-  // Filter Logic
+  // Filter Logic (Safe)
   const eventList = Array.isArray(events) ? events : [];
+
   const filteredEvents = eventList.filter((event) => {
     const now = new Date();
     const endDate = new Date(event.endDate);
@@ -97,6 +110,12 @@ export default function ManageEventsPage() {
 
     return matchesTab && matchesSearch;
   });
+
+  // pagination logic
+  const totalPages = Math.ceil(filteredEvents.length / EVENTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * EVENTS_PER_PAGE;
+  const endIndex = startIndex + EVENTS_PER_PAGE;
+  const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
 
   // Helper Format Rupiah
   const formatRupiah = (number: number) => {
@@ -116,7 +135,7 @@ export default function ManageEventsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -171,10 +190,10 @@ export default function ManageEventsPage() {
         </div>
       </div>
 
-      {/* Event Grid */}
+      {/* Event Grid (Menampilkan Data yang sudah dipaginasi) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Create New Card (Only visible on ACTIVE tab) */}
-        {activeTab === "ACTIVE" && !search && (
+        {/* Create New Card (Hanya tampil di halaman 1 tab ACTIVE dan tidak sedang search) */}
+        {activeTab === "ACTIVE" && !search && currentPage === 1 && (
           <Link href="/create-event" className="group h-full">
             <div className="h-full min-h-[380px] border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center bg-slate-50/50 hover:bg-blue-50/30 hover:border-blue-400 transition-all cursor-pointer gap-4">
               <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -187,8 +206,8 @@ export default function ManageEventsPage() {
           </Link>
         )}
 
-        {/* Event Cards */}
-        {filteredEvents.map((event) => (
+        {/* Render Paginated Events */}
+        {paginatedEvents.map((event) => (
           <Card
             key={event.id}
             className="overflow-hidden hover:shadow-lg transition-shadow border-slate-200 flex flex-col"
@@ -317,6 +336,37 @@ export default function ManageEventsPage() {
           <p className="text-slate-500">
             Belum ada riwayat event yang berlalu.
           </p>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {filteredEvents.length > EVENTS_PER_PAGE && (
+        <div className="flex items-center justify-center gap-4 pt-8">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="h-10 w-10 rounded-full"
+          >
+            <ChevronLeft size={20} />
+          </Button>
+
+          <span className="text-sm font-medium text-slate-600">
+            Halaman {currentPage} dari {totalPages}
+          </span>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+            className="h-10 w-10 rounded-full"
+          >
+            <ChevronRight size={20} />
+          </Button>
         </div>
       )}
     </div>

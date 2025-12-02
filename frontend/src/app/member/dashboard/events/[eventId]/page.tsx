@@ -11,6 +11,10 @@ import {
   AlertCircle,
   Banknote,
   Ticket,
+  ChevronsLeft,
+  ChevronRight,
+  ChevronsRight,
+  ChevronLeft,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -74,18 +78,23 @@ export default function EventReportPage() {
 
   const [event, setEvent] = useState<Event | null>(null);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const [search, setSearch] = useState("");
+  // filter state
+  const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "ALL">(
     "ALL"
   );
 
+  // pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+
   // Modal Verification State
   const [selectedTrx, setSelectedTrx] = useState<TransactionItem | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [rejectReason, setRejectReason] = useState<string>("");
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   // Load Data
   const fetchData = async () => {
@@ -119,6 +128,10 @@ export default function EventReportPage() {
     fetchData();
   }, [eventId]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, itemsPerPage]);
+
   const handleVerify = async (action: "ACCEPT" | "REJECT") => {
     if (!selectedTrx) return;
 
@@ -129,6 +142,7 @@ export default function EventReportPage() {
 
     try {
       setIsProcessing(true);
+
       if (action === "ACCEPT") {
         await dashboardService.acceptTransaction(selectedTrx.id);
         toast.success("Pembayaran diterima! Tiket telah diterbitkan.");
@@ -177,6 +191,12 @@ export default function EventReportPage() {
 
     return matchesSearch && matchesStatus;
   });
+
+  // logic pagination
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
 
   if (loading) {
     return (
@@ -321,8 +341,8 @@ export default function EventReportPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {filteredData.length > 0 ? (
-                  filteredData.map((trx) => (
+                {paginatedData.length > 0 ? (
+                  paginatedData.map((trx) => (
                     <tr
                       key={trx.id}
                       className="hover:bg-slate-50 transition-colors"
@@ -389,6 +409,78 @@ export default function EventReportPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination controls */}
+          {filteredData.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                <span>Tampilkan</span>
+                <select
+                  className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs focus:ring-1 focus:ring-ring"
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>data</span>
+                <span className="hidden sm:inline-block ml-2 text-slate-400">
+                  ({startIndex + 1} - {Math.min(endIndex, filteredData.length)}{" "}
+                  dari {filteredData.length})
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                <span className="text-sm font-medium px-2 min-w-20 text-center">
+                  Hal {currentPage} / {totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
