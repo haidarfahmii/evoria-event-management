@@ -80,7 +80,7 @@ router.post('/:eventId/create-promotion',
 )
 
 router.get('/promotion/event/:eventId',
-  verifyRole([Role.ORGANIZER]),
+  verifyRole([Role.ORGANIZER, Role.CUSTOMER]),
   transactionController.getPromotionByEventId
 );
 
@@ -90,7 +90,7 @@ router.delete('/promotion/event/:eventId',
 );
 
 router.get('/promotion/:id',
-  verifyRole([Role.ORGANIZER]),
+  verifyRole([Role.ORGANIZER, Role.CUSTOMER]),
   transactionController.getPromotionbyId
 )
 router.delete('/promotion/:id',
