@@ -13,17 +13,21 @@ import {
   Filter,
   FileText,
   Loader2,
+  UploadCloud,
+  AlertCircle,
+  CheckCircle,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { format } from "date-fns"; // Disarankan pakai date-fns untuk format tanggal
+import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import axiosInstance from "@/utils/axiosInstance";
 
 /**
  * ==========================================
- * 1. TYPES & ENUMS (Sesuai API Response)
+ * 1. TYPES & ENUMS
  * ==========================================
  */
 
@@ -45,8 +49,6 @@ interface User {
 interface Event {
   id: string;
   name: string;
-  // Field image, venue, date tidak ada di JSON response contoh,
-  // jadi kita akan handle dengan placeholder/optional
   image?: string;
   venue?: string;
   startDate?: string;
@@ -66,7 +68,7 @@ interface Transaction {
   status: TransactionStatus;
   paymentProof: string | null;
   paymentProofUploadedAt: string | null;
-  expiresAt: string | null;
+  expiresAt: string | null; 
   organizerResponseDeadline: string | null;
   reminderSent: boolean;
   createdAt: string;
@@ -89,7 +91,7 @@ interface ApiResponse {
 
 /**
  * ==========================================
- * 2. UTILS
+ * 2. UTILS & SUB-COMPONENTS
  * ==========================================
  */
 
@@ -101,7 +103,50 @@ const formatRupiah = (amount: number) => {
   }).format(amount);
 };
 
-// Helper untuk Badge Status dengan warna yang sesuai Enum
+// --- COMPONENT: COUNTDOWN TIMER ---
+const PaymentCountdown = ({ expiresAt }: { expiresAt: string | null }) => {
+  const [timeLeft, setTimeLeft] = useState("");
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    if (!expiresAt) return;
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const expiryDate = new Date(expiresAt).getTime();
+      const distance = expiryDate - now;
+
+      if (distance < 0) {
+        clearInterval(interval);
+        setIsExpired(true);
+        setTimeLeft("Waktu Habis");
+      } else {
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Format HH:MM:SS
+        setTimeLeft(`${hours.toString().padStart(2, '0')} : ${minutes.toString().padStart(2, '0')} : ${seconds.toString().padStart(2, '0')}`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  if (!expiresAt) return null;
+
+  return (
+    <div className={`rounded-lg p-3 text-center border ${isExpired ? 'bg-red-50 border-red-200 text-red-600' : 'bg-orange-50 border-orange-200 text-orange-700'}`}>
+      <p className="text-xs font-semibold mb-1 uppercase tracking-wider">
+        {isExpired ? "Batas Pembayaran Berakhir" : "Sisa Waktu Pembayaran"}
+      </p>
+      <div className="text-2xl font-mono font-bold">
+        {timeLeft || "-- : -- : --"}
+      </div>
+    </div>
+  );
+};
+
 const Badge = ({ status }: { status: TransactionStatus }) => {
   const styles: Record<TransactionStatus, string> = {
     WAITING_PAYMENT: "bg-orange-50 text-orange-600 border-orange-200",
@@ -122,9 +167,7 @@ const Badge = ({ status }: { status: TransactionStatus }) => {
   };
 
   return (
-    <span
-      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[status]}`}
-    >
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[status]}`}>
       {labels[status]}
     </span>
   );
@@ -136,20 +179,84 @@ const Badge = ({ status }: { status: TransactionStatus }) => {
  * ==========================================
  */
 
-// --- 3.1 Modal Detail Tiket ---
+// --- 3.1 Modal Detail Tiket (UPDATED) ---
 const TicketDetailModal = ({
   transaction,
   onClose,
+  onSuccessUpload
 }: {
   transaction: Transaction;
   onClose: () => void;
+  onSuccessUpload: () => void;
 }) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   if (!transaction) return null;
 
-  // Placeholder data karena API response contoh tidak lengkap (venue/time)
   const displayDate = format(new Date(transaction.createdAt), "dd MMMM yyyy", { locale: idLocale });
   const displayTime = format(new Date(transaction.createdAt), "HH:mm", { locale: idLocale }) + " WIB";
-  const displayVenue = transaction.event.venue || "Venue TBA"; // Fallback jika API tidak ada data
+  const displayVenue = transaction.event.venue || "Venue TBA";
+
+  // --- LOGIC UPLOAD ---
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      // Validasi ukuran (max 2MB misalnya)
+      if (selectedFile.size > 2 * 1024 * 1024) {
+        setUploadError("Ukuran file maksimal 2MB");
+        return;
+      }
+      // Validasi tipe
+      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(selectedFile.type)) {
+        setUploadError("Hanya format JPG, JPEG, dan PNG yang diperbolehkan");
+        return;
+      }
+
+      setFile(selectedFile);
+      setPreviewUrl(URL.createObjectURL(selectedFile));
+      setUploadError(null);
+    }
+  };
+
+  const handleUploadPayment = async () => {
+    if (!file) {
+      setUploadError("Mohon pilih file bukti transfer terlebih dahulu.");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+
+      const formData = new FormData();
+      formData.append("paymentProof", file);
+
+      // NOTE: Endpoint disesuaikan dengan request: transactions/:transactionId/upload-payment
+      const response = await axiosInstance.patch(
+        `/transactions/${transaction.id}/upload-payment`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          }
+        }
+      );
+
+      if (response.data.success || response.status === 200) {
+        alert("Bukti pembayaran berhasil diupload!"); // Ganti dengan toast jika ada
+        onSuccessUpload(); // Refresh data di parent
+        onClose();
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      setUploadError(err.response?.data?.message || "Gagal mengupload bukti pembayaran.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -221,27 +328,21 @@ const TicketDetailModal = ({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-xs text-gray-500">Jumlah Tiket</span>
-                <span className="text-sm font-semibold text-gray-800">
-                  {transaction.qty} Pax
+                <span className="text-xs text-gray-500">Total Tagihan</span>
+                <span className="text-sm font-bold text-orange-600">
+                  {formatRupiah(transaction.finalPrice)}
                 </span>
               </div>
             </div>
           </div>
-
-          <div className="mt-auto pt-8">
-            <p className="text-xs text-gray-400">
-              *Tiket ini valid jika status transaksi <b>DONE</b>.
-            </p>
-          </div>
         </div>
 
-        {/* RIGHT SIDE: QR Code & Actions */}
-        <div className="w-full md:w-1/3 bg-gray-50 p-6 md:p-8 flex flex-col items-center justify-center border-l-0 md:border-l-2 border-dashed border-gray-300 relative">
+        {/* RIGHT SIDE: Action / QR / Upload */}
+        <div className="w-full md:w-1/3 bg-gray-50 p-6 md:p-8 flex flex-col border-l-0 md:border-l-2 border-dashed border-gray-300 relative overflow-y-auto">
 
-          {/* QR Code hanya jika DONE */}
-          {transaction.status === TransactionStatus.DONE ? (
-            <>
+          {/* KONDISI 1: SUDAH SELESAI (DONE) -> Tampilkan QR */}
+          {transaction.status === TransactionStatus.DONE && (
+            <div className="flex flex-col items-center justify-center h-full">
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 w-full max-w-[200px]">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${transaction.id}`}
@@ -255,16 +356,96 @@ const TicketDetailModal = ({
               <Button className="w-full bg-[#00388D] gap-2 mb-2">
                 <Download size={16} /> Download
               </Button>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                <Clock className="text-gray-400" />
+            </div>
+          )}
+
+          {/* KONDISI 2: MENUNGGU PEMBAYARAN (WAITING_PAYMENT) -> Tampilkan Countdown & Upload */}
+          {transaction.status === TransactionStatus.WAITING_PAYMENT && (
+            <div className="flex flex-col h-full gap-4">
+              <div className="mb-2">
+                <Badge status={transaction.status} />
               </div>
-              <h3 className="font-bold text-gray-700">Belum Tersedia</h3>
-              <p className="text-xs text-gray-500 mt-2">
-                QR Code akan muncul setelah pembayaran selesai & dikonfirmasi.
+
+              {/* Countdown Component */}
+              <PaymentCountdown expiresAt={transaction.expiresAt} />
+
+              <div className="border-t border-gray-200 my-2"></div>
+
+              <div className="flex-1">
+                <label className="text-sm font-bold text-gray-700 block mb-2">
+                  Upload Bukti Transfer
+                </label>
+
+                {/* Area Upload */}
+                <div className="relative">
+                  {!previewUrl ? (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center bg-white hover:bg-gray-50 transition-colors cursor-pointer text-center">
+                      <UploadCloud className="text-gray-400 mb-2" size={32} />
+                      <p className="text-xs text-gray-500">Klik untuk upload gambar</p>
+                      <p className="text-[10px] text-gray-400 mt-1">Max 2MB (JPG/PNG)</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={handleFileChange}
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                      <img src={previewUrl} alt="Preview" className="w-full h-40 object-cover" />
+                      <button
+                        onClick={() => { setFile(null); setPreviewUrl(null); }}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Error Message */}
+                {uploadError && (
+                  <div className="flex items-center gap-2 mt-2 text-red-600 bg-red-50 p-2 rounded text-xs">
+                    <AlertCircle size={14} /> {uploadError}
+                  </div>
+                )}
+              </div>
+
+              <Button
+                onClick={handleUploadPayment}
+                disabled={!file || isUploading}
+                className="w-full bg-orange-600 hover:bg-orange-700 mt-auto"
+              >
+                {isUploading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengupload...</>
+                ) : (
+                  "Konfirmasi Pembayaran"
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* KONDISI 3: MENUNGGU KONFIRMASI (WAITING_CONFIRMATION) */}
+          {transaction.status === TransactionStatus.WAITING_CONFIRMATION && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-600">
+                <CheckCircle size={32} />
+              </div>
+              <h3 className="font-bold text-gray-800">Bukti Diterima</h3>
+              <p className="text-xs text-gray-500 mt-2 mb-4">
+                Kami sedang memverifikasi pembayaran Anda. Mohon tunggu maksimal 3x24 jam.
               </p>
+              <Badge status={transaction.status} />
+            </div>
+          )}
+
+          {/* KONDISI LAIN (CANCELLED / EXPIRED / REJECTED) */}
+          {['CANCELLED', 'EXPIRED', 'REJECTED'].includes(transaction.status) && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                <X size={32} />
+              </div>
+              <h3 className="font-bold text-gray-700">Transaksi Tidak Aktif</h3>
               <div className="mt-4">
                 <Badge status={transaction.status} />
               </div>
@@ -277,7 +458,7 @@ const TicketDetailModal = ({
   );
 };
 
-// --- 3.2 Ticket Card Item ---
+// --- 3.2 Ticket Card Item (Sedikit penyesuaian untuk aksi) ---
 const TicketCard = ({
   transaction,
   onClick,
@@ -285,7 +466,6 @@ const TicketCard = ({
   transaction: Transaction;
   onClick: () => void;
 }) => {
-  // Placeholder image jika API tidak menyediakan
   const imageUrl = transaction.event.image || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=600&auto=format&fit=crop";
   const displayDate = format(new Date(transaction.createdAt), "dd MMM yyyy", { locale: idLocale });
   const displayTime = format(new Date(transaction.createdAt), "HH:mm", { locale: idLocale }) + " WIB";
@@ -356,7 +536,6 @@ const TicketCard = ({
             </div>
 
             <div className="flex items-center justify-between w-full md:w-auto gap-3">
-              {/* Mobile Price */}
               <div className="md:hidden flex flex-col">
                 <span className="text-[10px] text-gray-500">Total Harga</span>
                 <span className="font-bold text-orange-600 text-base">
@@ -364,10 +543,9 @@ const TicketCard = ({
                 </span>
               </div>
 
-              {/* Action Buttons based on Status */}
               {transaction.status === TransactionStatus.WAITING_PAYMENT && (
                 <Button onClick={onClick} size="sm" className="ml-auto bg-orange-500 hover:bg-orange-600">
-                  Bayar Sekarang
+                  Bayar & Upload
                 </Button>
               )}
 
@@ -377,15 +555,10 @@ const TicketCard = ({
                 </Button>
               )}
 
-              {transaction.status === TransactionStatus.WAITING_CONFIRMATION && (
+              {/* Default button for other statuses */}
+              {![TransactionStatus.WAITING_PAYMENT, TransactionStatus.DONE].includes(transaction.status) && (
                 <Button onClick={onClick} size="sm" variant="outline" className="ml-auto">
                   Lihat Detail
-                </Button>
-              )}
-
-              {(transaction.status === TransactionStatus.EXPIRED || transaction.status === TransactionStatus.CANCELLED) && (
-                <Button onClick={onClick} size="sm" variant="secondary" className="ml-auto text-gray-500">
-                  Detail
                 </Button>
               )}
             </div>
@@ -402,40 +575,36 @@ export default function TiketSayaPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-
-  // Tab State: 'all' or one of the Enum values
   const [activeTab, setActiveTab] = useState<TransactionStatus | "all">("all");
 
-  // Fetch Data from API
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        setLoading(true);
-        const { data } = await axiosInstance.get<ApiResponse>("/transactions/my-transactions");
+  // Pindahkan fetch ke fungsi terpisah agar bisa dipanggil ulang
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true); // Opsional: matikan loading UI blocking jika hanya refresh data background
+      const { data } = await axiosInstance.get<ApiResponse>("/transactions/my-transactions");
 
-        if (data.success) {
-          setTransactions(data.data.transactions);
-        } else {
-          setError(data.message || "Gagal memuat transaksi");
-        }
-      } catch (err: any) {
-        console.error("Fetch error:", err);
-        setError(err.response?.data?.message || "Terjadi kesalahan koneksi");
-      } finally {
-        setLoading(false);
+      if (data.success) {
+        setTransactions(data.data.transactions);
+      } else {
+        setError(data.message || "Gagal memuat transaksi");
       }
-    };
+    } catch (err: any) {
+      console.error("Fetch error:", err);
+      setError(err.response?.data?.message || "Terjadi kesalahan koneksi");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTransactions();
   }, []);
 
-  // Filter Logic
   const filteredTransactions =
     activeTab === "all"
       ? transactions
       : transactions.filter((t) => t.status === activeTab);
 
-  // Tabs Configuration
   const tabs = [
     { id: "all", label: "Semua" },
     { id: TransactionStatus.WAITING_PAYMENT, label: "Belum Bayar" },
@@ -457,11 +626,10 @@ export default function TiketSayaPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Contoh tombol refresh manual */}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.location.reload()}
+            onClick={fetchTransactions}
           >
             Refresh Data
           </Button>
@@ -471,7 +639,6 @@ export default function TiketSayaPage() {
       {/* Custom Tabs Navigation */}
       <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar pb-1">
         {tabs.map((tab) => {
-          // Hitung count untuk setiap tab
           const count = tab.id === 'all'
             ? transactions.length
             : transactions.filter(t => t.status === tab.id).length;
@@ -539,6 +706,9 @@ export default function TiketSayaPage() {
         <TicketDetailModal
           transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}
+          onSuccessUpload={() => {
+            fetchTransactions(); // Refresh data setelah upload sukses
+          }}
         />
       )}
     </div>
