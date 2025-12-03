@@ -133,9 +133,6 @@ export default function TicketingSection({ ticketTypes, eventId }: TicketingSect
                 eventId: eventId,
                 ticketTypeId: selectedTicket.id,
                 qty: quantity,
-                // Mengirim null jika tidak ada kupon/promo/point yang dipakai
-                // couponId: appliedCouponId || null,
-                // promotionId: appliedPromoId || null,
                 pointsUsed: pointUsed || 0, // Backend biasanya prefer number (0) daripada null untuk kalkulasi
                 totalPrice: totalPrice // Opsional: Terkadang backend butuh ini untuk validasi selisih
             };
@@ -150,7 +147,7 @@ export default function TicketingSection({ ticketTypes, eventId }: TicketingSect
                 payload.promotionId = appliedPromoId;
             }
 
-            console.log("Sending payload:", payload);
+            // console.log("Sending payload:", payload);
 
             // // 1. POST ke API
             const response = await axiosInstance.post(`/transactions`, payload);
