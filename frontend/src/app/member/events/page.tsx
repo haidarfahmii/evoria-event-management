@@ -304,7 +304,7 @@ export default function ManageEventsPage() {
                   {/* Note: Halaman edit belum dibuat, arahkan ke placeholder atau buat nanti */}
                   <DropdownMenuItem
                     onClick={() =>
-                      router.push(`/member/events/${event.id}/edit`)
+                      router.push(`/member/events/edit/${event.id}`)
                     }
                   >
                     <Edit className="mr-2 h-4 w-4" /> Edit Event

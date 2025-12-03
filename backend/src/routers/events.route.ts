@@ -9,22 +9,35 @@ import { expressValidator } from "../middlewares/express-validator.middleware";
 
 const router = Router();
 
-router.post('/',
-    multerCloudinaryUploader(
-        "evoria-avatars", // Nama folder di Cloudinary
-        ["jpg", "jpeg", "png", "webp"], // Format yang diterima
-        5 * 1024 * 1024 // Maksimal 5MB
-    ).single("imageUrl"),
-    createEventsValidator,
-    expressValidator,
-    verifyToken(JWT_SECRET_KEY_AUTH!),
-    verifyRole(['ORGANIZER']),
-    eventsController.create)
-    
-router.get('/', eventsController.getAll)
-router.get('/:id', eventsController.getById)
-router.get('/detail/:slug', eventsController.getBySlug)
-router.put('/:id', eventsController.update)
-router.delete('/:id', eventsController.delete)
+router.post(
+  "/",
+  multerCloudinaryUploader(
+    "evoria-avatars", // Nama folder di Cloudinary
+    ["jpg", "jpeg", "png", "webp"], // Format yang diterima
+    5 * 1024 * 1024 // Maksimal 5MB
+  ).single("imageUrl"),
+  createEventsValidator,
+  expressValidator,
+  verifyToken(JWT_SECRET_KEY_AUTH!),
+  verifyRole(["ORGANIZER"]),
+  eventsController.create
+);
+
+router.put(
+  "/:id",
+  multerCloudinaryUploader(
+    "evoria-avatars",
+    ["jpg", "jpeg", "png", "webp"],
+    5 * 1024 * 1024
+  ).single("imageUrl"),
+  verifyToken(JWT_SECRET_KEY_AUTH!),
+  verifyRole(["ORGANIZER"]),
+  eventsController.update
+);
+
+router.get("/", eventsController.getAll);
+router.get("/:id", eventsController.getById);
+router.get("/detail/:slug", eventsController.getBySlug);
+router.delete("/:id", eventsController.delete);
 
 export default router;

@@ -40,8 +40,8 @@ export const eventService = {
     return response.data.data;
   },
 
-  updateEvent: async (eventId: string, fromData: FormData) => {
-    const response = await axiosInstance.put(`/events/${eventId}`, fromData);
+  updateEvent: async (eventId: string, formData: FormData) => {
+    const response = await axiosInstance.put(`/events/${eventId}`, formData);
     return response.data;
   },
 
