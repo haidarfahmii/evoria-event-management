@@ -12,9 +12,10 @@ interface TicketType {
 
 interface TicketingSectionProps {
     ticketTypes: TicketType[];
+    eventId: string;
 }
 
-export default function TicketingSection({ ticketTypes }: TicketingSectionProps) {
+export default function TicketingSection({ ticketTypes, eventId }: TicketingSectionProps) {
     // State for ticket selection
     const [selectedTicketId, setSelectedTicketId] = useState<string>(
         ticketTypes && ticketTypes.length > 0 ? ticketTypes[0].id : ""
@@ -42,6 +43,21 @@ export default function TicketingSection({ ticketTypes }: TicketingSectionProps)
     const handleTicketSelect = (id: string) => {
         setSelectedTicketId(id);
         setQuantity(1);
+    };
+
+    // --- TAMBAHAN: Fungsi untuk Console Log ---
+    const handleCheckout = () => {
+        const result = {
+            eventId: eventId,
+            ticketId: selectedTicket.id,
+            ticketName: selectedTicket.name,
+            pricePerUnit: selectedTicket.price,
+            quantity: quantity,
+            totalPrice: totalPrice,
+        };
+
+        console.log("=== CHECKOUT DATA ===");
+        console.log(result);
     };
 
     return (
@@ -171,6 +187,7 @@ export default function TicketingSection({ ticketTypes }: TicketingSectionProps)
                         </div>
 
                         <button
+                            onClick={handleCheckout} // <--- PERUBAHAN DISINI (Attach Handler)
                             disabled={isSoldOut}
                             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] active:scale-[0.98]"
                         >
