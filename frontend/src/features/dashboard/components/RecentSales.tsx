@@ -60,9 +60,7 @@ export function RecentSales() {
             />
             <div className="ml-4 space-y-1">
               <p className="text-sm font-medium leading-none">{trx.userName}</p>
-              <p className="text-xs text-muted-foreground text-slate-500">
-                {trx.eventName}
-              </p>
+              <p className="text-xs text-slate-500">{trx.eventName}</p>
             </div>
             <div className="ml-auto font-medium text-sm">
               +

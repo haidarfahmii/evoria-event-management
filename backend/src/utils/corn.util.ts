@@ -1,5 +1,3 @@
-// backend/src/utils/cron.util.ts
-
 import prisma from "../config/prisma.config";
 import { TransactionStatus } from "../generated/prisma/client";
 import { transactionService } from "../services/transaction.service";
@@ -11,54 +9,53 @@ import { emailService } from "../services/notif-mail-transaction.service";
 export async function checkExpiredTransactions() {
   try {
     console.log("🔄 [CRON] Running transaction checks...");
+    const now = new Date();
 
     // ================================================
     // 1. SEND PAYMENT REMINDER (1 hour before expiry)
     // ================================================
-    const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
-    const oneHourAgo = new Date(Date.now() + 50 * 60 * 1000);
+    const reminderTimeStart = new Date(now.getTime() + 45 * 60 * 1000); // 45 menit lagi
+    const reminderTimeEnd = new Date(now.getTime() + 75 * 60 * 1000); // 1 jam 15 menit lagi
 
-    const reminders = await prisma.transaction.findMany({
+    const transactionsToRemind = await prisma.transaction.findMany({
       where: {
         status: TransactionStatus.WAITING_PAYMENT,
         reminderSent: false,
         expiresAt: {
-          gte: oneHourAgo,
-          lte: oneHourFromNow,
+          gte: reminderTimeStart,
+          lte: reminderTimeEnd,
         },
       },
     });
 
-    console.log(`  ℹ️ Found ${reminders.length} transactions needing reminder`);
+    console.log(
+      `  ℹ️ Found ${transactionsToRemind.length} transactions needing reminder`
+    );
 
-    for (const t of reminders) {
-      try {
-        await emailService.sendPaymentReminder(t.id);
+    for (const trx of transactionsToRemind) {
+      emailService.sendPaymentReminder(trx.id).catch(console.error);
 
-        await prisma.transaction.update({
-          where: { id: t.id },
-          data: { reminderSent: true },
-        });
-
-        console.log(`  ✅ Reminder sent for transaction ${t.id}`);
-      } catch (error) {
-        console.error(`  ❌ Failed to send reminder for ${t.id}:`, error);
-      }
+      await prisma.transaction.update({
+        where: { id: trx.id },
+        data: { reminderSent: true },
+      });
     }
 
     // ================================================
     // 2. EXPIRE TRANSACTIONS (> 2 hours no payment)
     // ================================================
-    const expired = await prisma.transaction.findMany({
+    const expiredTransactions = await prisma.transaction.findMany({
       where: {
         status: TransactionStatus.WAITING_PAYMENT,
-        expiresAt: { lt: new Date() },
+        expiresAt: { lt: now },
       },
     });
 
-    console.log(`  ℹ️ Found ${expired.length} expired transactions`);
+    console.log(
+      `  ℹ️ Found ${expiredTransactions.length} expired transactions`
+    );
 
-    for (const t of expired) {
+    for (const t of expiredTransactions) {
       try {
         // Rollback
         await transactionService.rollbackTransaction(

@@ -3,8 +3,6 @@ import path from "path";
 import Handlebars from "handlebars";
 import { transporter } from "../config/nodemailer.config";
 import { GOOGLE_APP_ACCOUNT } from "../config/index.config";
-import { prisma } from "../config/prisma.config";
-import { emailTemplates } from "../utils/email-templates.util";
 
 interface SendMailOptions {
   to: string;

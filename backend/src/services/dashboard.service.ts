@@ -135,7 +135,7 @@ export const dashboardService: IDashboardService = {
     });
 
     try {
-      await emailService.sendTransactionAccepted(data.transactionId);
+      emailService.sendTransactionAccepted(data.transactionId);
     } catch (error) {
       console.error("Failed to send acceptance email:", error);
     }
@@ -171,13 +171,12 @@ export const dashboardService: IDashboardService = {
       TransactionStatus.REJECTED
     );
 
+    const rejectionReason = data.reason || "Pembayaran tidak valid.";
+
     try {
-      await emailService.sendTransactionRejected(
-        data.transactionId,
-        data.reason
-      );
+      emailService.sendTransactionRejected(data.transactionId, rejectionReason);
     } catch (error) {
-      console.error("Failed to send rejection email:", error);
+      console.error("Failed to send acceptance email:", error);
     }
 
     return rollbackResult;

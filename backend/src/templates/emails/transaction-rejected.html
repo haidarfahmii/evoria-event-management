@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: #333;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .header {
+        background-color: #ef4444;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+      }
+      .content {
+        padding: 30px;
+        background-color: #fff;
+      }
+      .reason-box {
+        background-color: #fef2f2;
+        border-left: 4px solid #ef4444;
+        padding: 15px;
+        margin: 20px 0;
+        color: #b91c1c;
+      }
+      .footer {
+        background-color: #f1f5f9;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>❌ Transaksi Ditolak</h1>
+      </div>
+      <div class="content">
+        <p>Halo <strong>{{userName}}</strong>,</p>
+        <p>
+          Mohon maaf, transaksi Anda untuk event
+          <strong>{{eventName}}</strong> tidak dapat kami proses.
+        </p>
+
+        <div class="reason-box">
+          <strong>Alasan Penolakan:</strong><br />
+          {{reason}}
+        </div>
+
+        <p>
+          Jika Anda menggunakan Poin atau Kupon, saldo tersebut telah kami
+          kembalikan ke akun Anda.
+        </p>
+        <p>Silakan hubungi organizer jika Anda merasa ini adalah kesalahan.</p>
+      </div>
+      <div class="footer">&copy; {{year}} Evoria Event Management</div>
+    </div>
+  </body>
+</html>

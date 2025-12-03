@@ -8,9 +8,14 @@ import {
   RollbackResult,
   TransactionExpiredError,
   CreatePromotionDTO,
-  PromotionSummary
+  PromotionSummary,
 } from "../@types/transaction.index";
-import { Transaction, TransactionStatus, Promotion, Prisma } from "../generated/prisma/client";
+import {
+  Transaction,
+  TransactionStatus,
+  Promotion,
+  Prisma,
+} from "../generated/prisma/client";
 import { AppError } from "../utils/app-error";
 import { emailService } from "./notif-mail-transaction.service";
 import { generateInvoiceId } from "../utils/invoice-generator";
@@ -104,7 +109,7 @@ export const transactionService: ITransactionService = {
       promotionId,
     } = data;
 
-    return await prisma.$transaction(async (tx) => {
+    const newTransaction = await prisma.$transaction(async (tx) => {
       // Check Ticket & Seats
       const ticket = await tx.ticketType.findUnique({
         where: { id: ticketTypeId },
@@ -140,7 +145,7 @@ export const transactionService: ITransactionService = {
         }
 
         if (promotion.maxUsage! < 0) {
-          throw AppError("Promotion maxUsage is reached!", 400)
+          throw AppError("Promotion maxUsage is reached!", 400);
         }
 
         await tx.promotion.update({
@@ -279,6 +284,15 @@ export const transactionService: ITransactionService = {
         },
       });
     });
+
+    if (newTransaction.status === TransactionStatus.WAITING_PAYMENT) {
+      emailService.sendTransactionCreated(newTransaction.id).catch((err) => {
+        console.error("Failed to send transaction created email", err);
+      });
+    }
+
+    // Return hasil transaksi
+    return newTransaction;
   },
 
   // Upload Payment Proof
@@ -370,24 +384,16 @@ export const transactionService: ITransactionService = {
     const t = await prisma.transaction.findUnique({ where: { id } });
     return t
       ? (
-        [
-          TransactionStatus.WAITING_PAYMENT,
-          TransactionStatus.WAITING_CONFIRMATION,
-        ] as TransactionStatus[]
-      ).includes(t.status)
+          [
+            TransactionStatus.WAITING_PAYMENT,
+            TransactionStatus.WAITING_CONFIRMATION,
+          ] as TransactionStatus[]
+        ).includes(t.status)
       : false;
   },
 
   async createPromotion(data: CreatePromotionDTO): Promise<Promotion> {
-    const {
-      eventId,
-      code,
-      type,
-      value,
-      maxUsage,
-      startDate,
-      endDate
-    } = data;
+    const { eventId, code, type, value, maxUsage, startDate, endDate } = data;
 
     // 1. Validate: Event Existence
     const event = await prisma.event.findUnique({
@@ -432,32 +438,34 @@ export const transactionService: ITransactionService = {
   async getPromotionByEventId(eventId: string): Promise<PromotionSummary[]> {
     return await prisma.promotion.findMany({
       where: {
-        eventId: eventId // Convert string to number (remove Number() if using UUIDs)
+        eventId: eventId, // Convert string to number (remove Number() if using UUIDs)
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   },
 
   async getPromotionById(id: string): Promise<PromotionSummary | null> {
     return await prisma.promotion.findUnique({
       where: {
-        id: id
+        id: id,
       },
     });
   },
 
-  async deletePromotionByEventId(eventId: string): Promise<Prisma.BatchPayload> {
+  async deletePromotionByEventId(
+    eventId: string
+  ): Promise<Prisma.BatchPayload> {
     return await prisma.promotion.deleteMany({
       where: {
-        eventId: eventId
-      }
+        eventId: eventId,
+      },
     });
   },
 
   async deletePromotionById(id: string): Promise<PromotionSummary | null> {
     return await prisma.promotion.delete({
       where: {
-        id: id
+        id: id,
       },
     });
   },
