@@ -74,29 +74,32 @@ export default function EventCard({ events }: { events: Event[] }) {
                                             <span className="line-clamp-1">{event.city} • {event.venue}</span>
                                         </div>
                                     </div>
-                                    
+
                                 </div>
                                 {/* Organized */}
-                                    <div className="flex items-center gap-2 mt-3 mb-4 pt-3 border-t border-slate-100 border-dashed">
-                                        <div className="relative w-6 h-6 rounded-full overflow-hidden border border-slate-200 bg-slate-100">
-                                            <Image
-                                                src={event?.organizer?.avatarUrl || "https://images.unsplash.com/photo-1654110455429-cf322b40a906?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
-                                                alt={event.organizer.name}
-                                                fill
-                                                className="object-cover"
-                                                sizes="24px"
-                                            />
-                                        </div>
-                                        <span className="text-xs font-medium text-slate-600 truncate">
-                                            By {event.organizer.name}
-                                        </span>
+                                <div className="flex items-center gap-2 mt-3 mb-4 pt-3 border-t border-slate-100 border-dashed">
+                                    <div className="relative w-6 h-6 rounded-full overflow-hidden border border-slate-200 bg-slate-100">
+                                        <Image
+                                            src={event?.organizer?.avatarUrl || "https://images.unsplash.com/photo-1654110455429-cf322b40a906?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+                                            alt={event.organizer.name}
+                                            fill
+                                            className="object-cover"
+                                            sizes="24px"
+                                        />
                                     </div>
+                                    <span className="text-xs font-medium text-slate-600 truncate">
+                                        By {event.organizer.name}
+                                    </span>
+                                </div>
 
                                 {/* Price Footer */}
                                 <div className="mt-auto pt-3 border-t border-slate-100 flex justify-between items-center">
                                     <span className="text-slate-400 text-xs font-medium">Starts from</span>
                                     <span className="text-primary-700 font-bold text-lg">
-                                        Rp {cheapestTicket?.price.toLocaleString('id-ID')}
+                                        {cheapestTicket?.price === 0
+                                            ? "Free"
+                                            : `Rp ${cheapestTicket?.price?.toLocaleString('id-ID')}`
+                                        }
                                     </span>
                                 </div>
                             </div>

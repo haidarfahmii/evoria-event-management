@@ -11,7 +11,7 @@ function generateSlug(name: string): string {
 
   const random = Math.random().toString(36).substring(2, 7);
 
-  return `${base}_${random}`;
+  return `${base}-${random}`;
 }
 
 const eventsController = {

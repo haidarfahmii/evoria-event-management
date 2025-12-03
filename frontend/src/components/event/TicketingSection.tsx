@@ -12,9 +12,10 @@ interface TicketType {
 
 interface TicketingSectionProps {
     ticketTypes: TicketType[];
+    eventId: string;
 }
 
-export default function TicketingSection({ ticketTypes }: TicketingSectionProps) {
+export default function TicketingSection({ ticketTypes, eventId }: TicketingSectionProps) {
     // State for ticket selection
     const [selectedTicketId, setSelectedTicketId] = useState<string>(
         ticketTypes && ticketTypes.length > 0 ? ticketTypes[0].id : ""
@@ -42,6 +43,21 @@ export default function TicketingSection({ ticketTypes }: TicketingSectionProps)
     const handleTicketSelect = (id: string) => {
         setSelectedTicketId(id);
         setQuantity(1);
+    };
+
+    // --- TAMBAHAN: Fungsi untuk Console Log ---
+    const handleCheckout = () => {
+        const result = {
+            eventId: eventId,
+            ticketId: selectedTicket.id,
+            ticketName: selectedTicket.name,
+            pricePerUnit: selectedTicket.price,
+            quantity: quantity,
+            totalPrice: totalPrice,
+        };
+
+        console.log("=== CHECKOUT DATA ===");
+        console.log(result);
     };
 
     return (
@@ -90,7 +106,14 @@ export default function TicketingSection({ ticketTypes }: TicketingSectionProps)
                                         )}
                                     </div>
                                     <div className="font-bold text-gray-900">
-                                        {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(ticket.price)}
+                                        {ticket.price === 0
+                                            ? "FREE"
+                                            : new Intl.NumberFormat("id-ID", {
+                                                style: "currency",
+                                                currency: "IDR",
+                                                maximumFractionDigits: 0
+                                            }).format(ticket.price)
+                                        }
                                     </div>
 
                                     {/* Active Indicator Dot */}
@@ -110,11 +133,15 @@ export default function TicketingSection({ ticketTypes }: TicketingSectionProps)
                                     Quantity
                                 </label>
                                 {/* Validation Msg */}
-                                {quantity >= selectedTicket.seats && (
+                                {quantity >= 3 ? (
+                                    <span className="text-[10px] text-red-500 font-medium">
+                                        Max 3 tickets per user
+                                    </span>
+                                ) : quantity >= selectedTicket.seats ? (
                                     <span className="text-[10px] text-red-500 font-medium">
                                         Max seats reached
                                     </span>
-                                )}
+                                ) : null}
                             </div>
 
                             <div className="flex items-center justify-between bg-gray-50 p-2 rounded-xl border border-gray-200">
@@ -128,7 +155,7 @@ export default function TicketingSection({ ticketTypes }: TicketingSectionProps)
                                 <span className="font-bold text-lg w-12 text-center text-gray-900">{quantity}</span>
                                 <button
                                     onClick={() => handleQuantityChange("increment")}
-                                    disabled={quantity >= selectedTicket.seats}
+                                    disabled={quantity >= selectedTicket.seats || quantity >= 3}
                                     className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                                 >
                                     <MdAdd size={20} />
@@ -146,13 +173,21 @@ export default function TicketingSection({ ticketTypes }: TicketingSectionProps)
                             <span className="text-sm text-gray-500 mb-1">Total Payment</span>
                             <div className="text-right">
                                 <span className="block text-2xl font-extrabold text-blue-600 leading-none">
-                                    {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(totalPrice)}
+                                    {totalPrice === 0
+                                        ? "FREE"
+                                        : new Intl.NumberFormat("id-ID", {
+                                            style: "currency",
+                                            currency: "IDR",
+                                            maximumFractionDigits: 0
+                                        }).format(totalPrice)
+                                    }
                                 </span>
                                 <span className="text-[10px] text-gray-400">Includes taxes & fees</span>
                             </div>
                         </div>
 
                         <button
+                            onClick={handleCheckout} // <--- PERUBAHAN DISINI (Attach Handler)
                             disabled={isSoldOut}
                             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] active:scale-[0.98]"
                         >

@@ -84,6 +84,7 @@ export default function useEventsForm() {
         console.log('Form values:', { name, startDate, endDate, city, venue, category, description, imageUrl, ticketTypes });
         // Add your API call here
         await axiosInstance.post('/events', formData);
+        alert('Create Event Successfully')
         // router.push('/events');
       } catch (error) {
         console.error(error);
