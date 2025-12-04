@@ -137,12 +137,26 @@ export const emailService = {
   },
 
   async sendTransactionExpired(transactionId: string) {
+    console.log(
+      `📧 Attempting to send EXPIRED email for transaction: ${transactionId}`
+    );
+
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
       include: { user: true, event: true, coupon: true },
     });
 
-    if (!transaction) return;
+    if (!transaction) {
+      const error = `Transaction ${transactionId} not found when sending expired email`;
+      console.error(`❌ ${error}`);
+      throw new Error(error); // THROW ERROR instead of silent return
+    }
+
+    if (!transaction.user?.email) {
+      const error = `User email not found for transaction ${transactionId}`;
+      console.error(`❌ [EMAIL] ${error}`);
+      throw new Error(error);
+    }
 
     const context = {
       userName: transaction.user.name,
@@ -153,21 +167,50 @@ export const emailService = {
       year: new Date().getFullYear(),
     };
 
-    await mailService.sendMail({
-      to: transaction.user.email,
-      subject: `⏰ Transaksi Kadaluarsa - ${transaction.event.name}`,
-      template: "transaction-expired.html",
-      context,
-    });
+    console.log(`📧 [EMAIL] Sending to: ${transaction.user.email}`);
+    console.log(`📧 [EMAIL] Context:`, JSON.stringify(context, null, 2));
+
+    try {
+      await mailService.sendMail({
+        to: transaction.user.email,
+        subject: `⏰ Transaksi Kadaluarsa - ${transaction.event.name}`,
+        template: "transaction-expired.html",
+        context,
+      });
+
+      console.log(
+        `✅ EXPIRED email sent successfully to ${transaction.user.email}`
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to send EXPIRED email to ${transaction.user.email}:`,
+        error
+      );
+      throw error; // Re-throw untuk di-handle oleh caller
+    }
   },
 
   async sendTransactionCancelled(transactionId: string) {
+    console.log(
+      `📧 Attempting to send CANCELLED email for transaction: ${transactionId}`
+    );
+
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
       include: { user: true, event: true, coupon: true },
     });
 
-    if (!transaction) return;
+    if (!transaction) {
+      const error = `Transaction ${transactionId} not found when sending cancelled email`;
+      console.error(`❌ ${error}`);
+      throw new Error(error);
+    }
+
+    if (!transaction.user?.email) {
+      const error = `User email not found for transaction ${transactionId}`;
+      console.error(`❌ [EMAIL] ${error}`);
+      throw new Error(error);
+    }
 
     const context = {
       userName: transaction.user.name,
@@ -178,11 +221,26 @@ export const emailService = {
       year: new Date().getFullYear(),
     };
 
-    await mailService.sendMail({
-      to: transaction.user.email,
-      subject: `⚠️ Transaksi Dibatalkan - ${transaction.event.name}`,
-      template: "transaction-cancelled.html",
-      context,
-    });
+    console.log(`📧 [EMAIL] Sending to: ${transaction.user.email}`);
+    console.log(`📧 [EMAIL] Context:`, JSON.stringify(context, null, 2));
+
+    try {
+      await mailService.sendMail({
+        to: transaction.user.email,
+        subject: `⚠️ Transaksi Dibatalkan - ${transaction.event.name}`,
+        template: "transaction-cancelled.html",
+        context,
+      });
+
+      console.log(
+        `✅ CANCELLED email sent successfully to ${transaction.user.email}`
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to send CANCELLED email to ${transaction.user.email}:`,
+        error
+      );
+      throw error;
+    }
   },
 };

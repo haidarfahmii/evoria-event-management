@@ -75,18 +75,21 @@ export const transactionService: ITransactionService = {
     });
 
     // Send email notification based on reason
-    try {
-      if (reason === TransactionStatus.EXPIRED) {
-        await emailService.sendTransactionExpired(transactionId);
-      } else if (reason === TransactionStatus.CANCELLED) {
-        await emailService.sendTransactionCancelled(transactionId);
-      } else if (reason === TransactionStatus.REJECTED) {
-        // Email untuk reject sudah dikirim dari Feature 6
-        console.log("  ℹ️ Rejection email handled by Feature 6");
-      }
-    } catch (error) {
-      console.error("Failed to send rollback email:", error);
-    }
+    // try {
+    //   if (reason === TransactionStatus.EXPIRED) {
+    //     await emailService.sendTransactionExpired(transactionId);
+    //   } else if (reason === TransactionStatus.CANCELLED) {
+    //     await emailService.sendTransactionCancelled(transactionId);
+    //   } else if (reason === TransactionStatus.REJECTED) {
+    //     // Email untuk reject sudah dikirim dari Feature 6
+    //     console.log("  ℹ️ Rejection email handled by Feature 6");
+    //   }
+    // } catch (error) {
+    //   console.error(
+    //     `❌ CRITICAL: Failed to send ${reason} email for transaction ${transactionId}:`,
+    //     error
+    //   );
+    // }
 
     return {
       transactionId,

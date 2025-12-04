@@ -8,7 +8,10 @@ import { emailService } from "../services/notif-mail-transaction.service";
  */
 export async function checkExpiredTransactions() {
   try {
-    console.log("🔄 [CRON] Running transaction checks...");
+    console.log("\n" + "=".repeat(60));
+    console.log("🔄 [CRON] Starting transaction checks...");
+    console.log("⏰ Current time:", new Date().toISOString());
+    console.log("=".repeat(60));
     const now = new Date();
 
     // ================================================
@@ -33,12 +36,16 @@ export async function checkExpiredTransactions() {
     );
 
     for (const trx of transactionsToRemind) {
-      emailService.sendPaymentReminder(trx.id).catch(console.error);
-
-      await prisma.transaction.update({
-        where: { id: trx.id },
-        data: { reminderSent: true },
-      });
+      try {
+        await emailService.sendPaymentReminder(trx.id).catch(console.error);
+        await prisma.transaction.update({
+          where: { id: trx.id },
+          data: { reminderSent: true },
+        });
+        console.log(`  ✅ Reminder sent for transaction ${trx.id}`);
+      } catch (error) {
+        console.error(`  ❌ Failed to send reminder for ${trx.id}:`, error);
+      }
     }
 
     // ================================================
@@ -49,6 +56,10 @@ export async function checkExpiredTransactions() {
         status: TransactionStatus.WAITING_PAYMENT,
         expiresAt: { lt: now },
       },
+      include: {
+        user: { select: { id: true, email: true, name: true } },
+        event: { select: { name: true } },
+      },
     });
 
     console.log(
@@ -56,15 +67,23 @@ export async function checkExpiredTransactions() {
     );
 
     for (const t of expiredTransactions) {
+      console.log(`\n  Processing transaction ${t.id}`);
+      console.log(`    User: ${t.user.name} <${t.user.email}>`);
+      console.log(`    Event: ${t.event.name}`);
+      console.log(`    Expired at: ${t.expiresAt?.toISOString()}`);
       try {
         // Rollback
+        console.log(`    ⏳ Rolling back...`);
         await transactionService.rollbackTransaction(
           t.id,
           TransactionStatus.EXPIRED
         );
+        console.log(`    ✅ Rollback successful`);
 
         // Send Email (Dari Kode 1)
+        console.log(`    📧 Sending email...`);
         await emailService.sendTransactionExpired(t.id);
+        console.log(`    ✅ Email sent`);
 
         console.log(`  ✅ Transaction ${t.id} expired, rolled back & notified`);
       } catch (error) {
@@ -80,20 +99,35 @@ export async function checkExpiredTransactions() {
         status: TransactionStatus.WAITING_CONFIRMATION,
         organizerResponseDeadline: { lt: new Date() },
       },
+      include: {
+        user: { select: { id: true, email: true, name: true } },
+        event: { select: { name: true } },
+      },
     });
 
     console.log(`  ℹ️ Found ${cancelled.length} transactions to auto-cancel`);
 
     for (const t of cancelled) {
+      console.log(`\n  Processing transaction ${t.id}`);
+      console.log(`    User: ${t.user.name} <${t.user.email}>`);
+      console.log(`    Event: ${t.event.name}`);
+      console.log(
+        `    Deadline: ${t.organizerResponseDeadline?.toISOString()}`
+      );
+
       try {
         // Rollback
+        console.log(`    ⏳ Rolling back...`);
         await transactionService.rollbackTransaction(
           t.id,
           TransactionStatus.CANCELLED
         );
+        console.log(`    ✅ Rollback successful`);
 
         // Send Email (Dari Kode 1)
+        console.log(`    📧 Sending email...`);
         await emailService.sendTransactionCancelled(t.id);
+        console.log(`    ✅ Email sent`);
 
         console.log(
           `  ✅ Transaction ${t.id} cancelled, rolled back & notified`
@@ -103,9 +137,20 @@ export async function checkExpiredTransactions() {
       }
     }
 
-    console.log("✅ [CRON] Transaction checks completed successfully");
+    console.log("\n" + "=".repeat(70));
+    console.log("✅ [CRON] Transaction Check Completed Successfully");
+    console.log("   Summary:");
+    console.log(`   - Reminders: ${transactionsToRemind.length}`);
+    console.log(`   - Expired: ${expiredTransactions.length}`);
+    console.log(`   - Cancelled: ${cancelled.length}`);
+    console.log("=".repeat(70) + "\n");
+    // console.log("✅ [CRON] Transaction checks completed successfully");
   } catch (error) {
-    console.error("❌ [CRON] Fatal error in transaction checks:", error);
+    // console.error("❌ [CRON] Fatal error in transaction checks:", error);
+    console.error("\n" + "=".repeat(70));
+    console.error("❌ [CRON] FATAL ERROR:");
+    console.error(error);
+    console.error("=".repeat(70) + "\n");
   }
 }
 
