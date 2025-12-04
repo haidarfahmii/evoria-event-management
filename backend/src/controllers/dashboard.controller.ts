@@ -164,6 +164,7 @@ export const dashboardController = {
 
     const eventsWithStats = events.map((event) => ({
       id: event.id,
+      slug: event.slug,
       name: event.name,
       startDate: event.startDate,
       endDate: event.endDate,

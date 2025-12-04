@@ -354,7 +354,7 @@ export default function EventReportPage() {
         </Card>
       </div>
 
-      {/* ✅ NEW: Tab Navigation */}
+      {/* Tab Navigation */}
       <Card className="overflow-hidden">
         <TabNavigation
           tabs={tabs}
@@ -362,10 +362,10 @@ export default function EventReportPage() {
           onTabChange={setActiveTab}
         />
 
-        {/* ✅ NEW: Tab Content - Conditional Rendering */}
+        {/* Tab Content - Conditional Rendering */}
         <div className="p-6">
           {activeTab === "transactions" ? (
-            /* TAB 1: TRANSACTIONS (EXISTING CONTENT) */
+            /* TAB TRANSACTIONS */
             <div className="space-y-6">
               {/* Search & Filter */}
               <div className="flex flex-col sm:flex-row gap-2">
@@ -562,13 +562,13 @@ export default function EventReportPage() {
               )}
             </div>
           ) : (
-            /* TAB 2: ATTENDEES (NEW CONTENT) */
+            /* TAB ATTENDEES */
             <AttendeeList attendees={attendees} loading={attendeesLoading} />
           )}
         </div>
       </Card>
 
-      {/* Modal Verifikasi (EXISTING - No changes) */}
+      {/* Modal Verifikasi */}
       {isModalOpen && selectedTrx && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">

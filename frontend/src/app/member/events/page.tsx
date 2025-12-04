@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import QRCode from "qrcode";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -13,13 +14,14 @@ import {
   Edit,
   Trash2,
   Eye,
+  Link2,
   Ticket,
   Loader2,
+  QrCode,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { toast } from "react-toastify";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +52,10 @@ export default function ManageEventsPage() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
   const EVENTS_PER_PAGE = 9; // Maksimal card per halaman
+
+  const [qrModalOpen, setQrModalOpen] = useState<boolean>(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [selectedEventName, setSelectedEventName] = useState<string>("");
 
   // Fetch Events
   const fetchEvents = async () => {
@@ -90,6 +96,22 @@ export default function ManageEventsPage() {
       fetchEvents(); // Refresh data
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Gagal menghapus event");
+    }
+  };
+
+  const handleGenerateQR = async (slug: string, eventName: string) => {
+    const publicUrl = `${window.location.origin}/event/${slug}`;
+    try {
+      const qrUrl = await QRCode.toDataURL(publicUrl, {
+        width: 300,
+        margin: 2,
+        color: { dark: "#000000", light: "#FFFFFF" },
+      });
+      setQrDataUrl(qrUrl);
+      setSelectedEventName(eventName);
+      setQrModalOpen(true);
+    } catch (err) {
+      toast.error("Gagal generate QR Code");
     }
   };
 
@@ -280,12 +302,26 @@ export default function ManageEventsPage() {
             </CardContent>
 
             <CardFooter className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center">
-              <Link
-                href={`/member/dashboard/events/${event.id}`}
-                className="text-sm font-medium text-blue-600 hover:underline"
-              >
-                Lihat Laporan
-              </Link>
+              <div className="flex gap-2">
+                {/* Quick Preview Button */}
+                {/* <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(`/event/${event.slug}`, "_blank")}
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-400"
+                >
+                  <Eye size={14} className="mr-1.5" />
+                  Preview
+                </Button> */}
+
+                {/* Lihat Laporan */}
+                <Link
+                  href={`/member/dashboard/events/${event.id}`}
+                  className="text-sm font-medium text-blue-600 hover:underline"
+                >
+                  Lihat Laporan
+                </Link>
+              </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -294,14 +330,59 @@ export default function ManageEventsPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {/* Lihat Halaman Detail Event Publik */}
                   <DropdownMenuItem
                     onClick={() =>
                       window.open(`/event/${event.slug}`, "_blank")
                     }
+                    className="group"
                   >
-                    <Eye className="mr-2 h-4 w-4" /> Lihat Halaman Publik
+                    <Eye className="mr-2 h-4 w-4" />
+                    <span className="flex-1">Lihat Halaman Publik</span>
+                    {/* Status Badge */}
+                    {new Date(event.endDate) >= new Date() ? (
+                      <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">
+                        LIVE
+                      </span>
+                    ) : (
+                      <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full">
+                        ENDED
+                      </span>
+                    )}
                   </DropdownMenuItem>
-                  {/* Note: Halaman edit belum dibuat, arahkan ke placeholder atau buat nanti */}
+
+                  {/* Copy Public Link */}
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const publicUrl = `${window.location.origin}/event/${event.slug}`;
+                      try {
+                        await navigator.clipboard.writeText(publicUrl);
+                        toast.success("Link berhasil dicopy!");
+                      } catch (err) {
+                        // Fallback for older browsers
+                        const textArea = document.createElement("textarea");
+                        textArea.value = publicUrl;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        // document.execCommand("copy");
+                        document.body.removeChild(textArea);
+                        toast.success("Link berhasil dicopy!");
+                      }
+                    }}
+                  >
+                    <Link2 className="mr-2 h-4 w-4" /> Copy Link Publik
+                  </DropdownMenuItem>
+
+                  {/* QR CODE */}
+                  <DropdownMenuItem
+                    onClick={() => handleGenerateQR(event.slug, event.name)}
+                    className="cursor-pointer"
+                  >
+                    <QrCode className="mr-2 h-4 w-4" />
+                    Generate QR Code
+                  </DropdownMenuItem>
+
+                  {/* Halaman Edit */}
                   <DropdownMenuItem
                     onClick={() =>
                       router.push(`/member/events/edit/${event.id}`)
@@ -309,6 +390,8 @@ export default function ManageEventsPage() {
                   >
                     <Edit className="mr-2 h-4 w-4" /> Edit Event
                   </DropdownMenuItem>
+
+                  {/* Delete Event */}
                   <DropdownMenuItem
                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
                     onClick={() => handleDelete(event.id)}
@@ -367,6 +450,74 @@ export default function ManageEventsPage() {
           >
             <ChevronRight size={20} />
           </Button>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {qrModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                  <QrCode className="text-blue-600" size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">QR Code Event</h3>
+                  <p className="text-xs text-slate-500">{selectedEventName}</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setQrModalOpen(false)}
+              >
+                ✕
+              </Button>
+            </div>
+
+            {/* QR Code Display */}
+            <div className="p-6">
+              {qrDataUrl && (
+                <div className="bg-slate-50 rounded-xl p-6 mb-4 flex justify-center">
+                  <div className="bg-white p-4 rounded-xl shadow-md">
+                    <img src={qrDataUrl} alt="QR Code" className="w-64 h-64" />
+                  </div>
+                </div>
+              )}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  📱 Scan QR code untuk akses halaman event
+                </p>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex gap-3 p-6 pt-0">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const link = document.createElement("a");
+                  link.download = `qr-${selectedEventName
+                    .toLowerCase()
+                    .replace(/\s+/g, "-")}.png`;
+                  link.href = qrDataUrl;
+                  link.click();
+                  toast.success("QR Code downloaded!");
+                }}
+                className="flex-1"
+              >
+                Download
+              </Button>
+              <Button
+                onClick={() => setQrModalOpen(false)}
+                className="flex-1 bg-blue-600"
+              >
+                Tutup
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
