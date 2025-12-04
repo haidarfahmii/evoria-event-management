@@ -23,6 +23,17 @@ export interface TicketType {
   seats: number;
 }
 
+export type PromotionType = "FLAT" | "PERCENTAGE";
+
+export interface Promotion {
+  code: string;
+  type: PromotionType;
+  value: number;
+  maxUsage: number;
+  startDate: string;
+  endDate: string;
+}
+
 export const eventService = {
   getOrganizerEvents: async (): Promise<Event[]> => {
     const response = await axiosInstance.get("/dashboard/events");
@@ -49,4 +60,20 @@ export const eventService = {
     const response = await axiosInstance.post("/events", formData);
     return response.data;
   },
+
+  getPromotionByEventId: async (eventId: string) => {
+    const response = await axiosInstance.get(`/transactions/promotion/event/${eventId}`);
+    return response.data?.data?.promotion;
+  },
+
+  createPromotion: async (eventId: string, data: any) => {
+    const response = await axiosInstance.post(`/transactions/${eventId}/create-promotion`, data)
+    console.log(response.data.data.promotion)
+    return response.data;
+  },
+
+  deletePromotion: async (promotionId: string) => {
+    const response = await axiosInstance.delete(`/transactions/promotion/${promotionId}`);
+    return response.data;
+  }
 };
