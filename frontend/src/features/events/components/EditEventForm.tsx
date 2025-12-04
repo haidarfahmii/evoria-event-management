@@ -11,19 +11,28 @@ import {
 } from "react-icons/md";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import useEventsForm from "../hooks/useEventsForm";
-
+import useEditEventForm from "../hooks/useEditEventForm";
 import categoriesData from "@/data/categoriesData.json";
 import citiesData from "@/data/citiesData.json";
+import Image from "next/image";
 
-export default function EventsForm() {
+interface EditEventFormProps {
+  event: any;
+  eventId: string;
+}
+
+export default function EditEventForm({ event, eventId }: EditEventFormProps) {
   const router = useRouter();
-  const { formik } = useEventsForm();
+  const { formik } = useEditEventForm(event, eventId);
 
   const categories = categoriesData.categories;
   const cities = citiesData.cities;
 
   const [ticketTypes, setTicketTypes] = useState(formik.values.ticketTypes);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    event.imageUrl || null
+  );
+  const [keepExistingImage, setKeepExistingImage] = useState<boolean>(true); // Track if keeping existing image
 
   const addTicketType = () => {
     const newTicket = {
@@ -37,18 +46,41 @@ export default function EventsForm() {
     formik.setFieldValue("ticketTypes", updatedTickets);
   };
 
-  const deleteTicketType = (id: number) => {
+  const deleteTicketType = (id: string | number) => {
+    if (ticketTypes.length === 1) {
+      alert("At least one ticket type is required!");
+      return;
+    }
     const updatedTickets = ticketTypes.filter((ticket) => ticket.id !== id);
     setTicketTypes(updatedTickets);
     formik.setFieldValue("ticketTypes", updatedTickets);
   };
 
-  const handleTicketChange = (id: number, field: string, value: any) => {
+  const handleTicketChange = (
+    id: string | number,
+    field: string,
+    value: any
+  ) => {
     const updatedTickets = ticketTypes.map((ticket) =>
       ticket.id === id ? { ...ticket, [field]: value } : ticket
     );
     setTicketTypes(updatedTickets);
     formik.setFieldValue("ticketTypes", updatedTickets);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.currentTarget.files && e.currentTarget.files[0]) {
+      const file = e.currentTarget.files[0];
+      formik.setFieldValue("imageUrl", [file]);
+      setKeepExistingImage(false); // Mark that we're replacing the image
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const getFieldError = (fieldName: string) => {
@@ -68,16 +100,14 @@ export default function EventsForm() {
 
   return (
     <form onSubmit={formik.handleSubmit} className="grid grid-cols-2 gap-4">
-      {/* event name */}
+      {/* Event name */}
       <div className="flex flex-col gap-1 col-span-2">
         <label className="text-sm font-medium text-gray-700">Event Name</label>
-
         <div className="relative w-full">
           <MdOutlineTitle
             size={20}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
           />
-
           <input
             type="text"
             name="name"
@@ -99,16 +129,14 @@ export default function EventsForm() {
         )}
       </div>
 
-      {/* start date */}
+      {/* Start date */}
       <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
         <label className="text-sm font-medium text-gray-700">Start Date</label>
-
         <div className="relative w-full">
           <MdOutlineDateRange
             size={20}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
           />
-
           <input
             type="date"
             name="startDate"
@@ -129,16 +157,14 @@ export default function EventsForm() {
         )}
       </div>
 
-      {/* end date */}
+      {/* End date */}
       <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
         <label className="text-sm font-medium text-gray-700">End Date</label>
-
         <div className="relative w-full">
           <MdOutlineDateRange
             size={20}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
           />
-
           <input
             type="date"
             name="endDate"
@@ -162,13 +188,11 @@ export default function EventsForm() {
       {/* City */}
       <div className="flex flex-col gap-1 col-span-2">
         <label className="text-sm font-medium text-gray-700">City</label>
-
         <div className="relative w-full">
           <MdLocationOn
             size={20}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
           />
-
           <select
             name="city"
             value={formik.values.city}
@@ -200,13 +224,11 @@ export default function EventsForm() {
       {/* Venue */}
       <div className="flex flex-col gap-1 col-span-2">
         <label className="text-sm font-medium text-gray-700">Venue Name</label>
-
         <div className="relative w-full">
           <MdOutlineStadium
             size={20}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
           />
-
           <input
             type="text"
             name="venue"
@@ -231,7 +253,6 @@ export default function EventsForm() {
       {/* Category */}
       <div className="flex flex-col gap-1 col-span-2">
         <label className="text-sm font-medium text-gray-700">Category</label>
-
         <div className="relative w-full">
           <select
             name="category"
@@ -264,13 +285,11 @@ export default function EventsForm() {
       {/* Description */}
       <div className="flex flex-col gap-1 col-span-2">
         <label className="text-sm font-medium text-gray-700">Description</label>
-
         <div className="relative w-full">
           <MdOutlineTextSnippet
             size={20}
             className="absolute left-3 top-5 -translate-y-1/2 text-gray-500"
           />
-
           <textarea
             name="description"
             value={formik.values.description}
@@ -293,38 +312,48 @@ export default function EventsForm() {
         )}
       </div>
 
-      {/* Image Banner */}
+      {/* Image Banner with Preview */}
       <div className="flex flex-col gap-1 col-span-2">
         <label className="text-sm font-medium text-gray-700">
           Image Banner
         </label>
+
+        {/* Current Image Preview */}
+        {imagePreview && (
+          <div className="relative w-full h-48 mb-2 rounded-lg overflow-hidden border border-gray-200">
+            <Image
+              src={imagePreview}
+              alt="Event Banner Preview"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-medium text-gray-600">
+              Current Image
+            </div>
+          </div>
+        )}
 
         <div className="relative w-full">
           <MdImage
             size={20}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
           />
-
           <input
             type="file"
             name="imageUrl"
-            onChange={(e) => {
-              if (e.currentTarget.files) {
-                formik.setFieldValue(
-                  "imageUrl",
-                  Array.from(e.currentTarget.files)
-                );
-              }
-            }}
+            onChange={handleImageChange}
             onBlur={formik.handleBlur}
+            accept="image/jpeg,image/jpg,image/png,image/webp"
             className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white ${getErrorClass(
                    "imageUrl"
                  )}`}
-            placeholder="e.g https://example.com/image.jpg"
           />
         </div>
+        <p className="text-xs text-gray-500">
+          Leave empty to keep current image. Upload new image to replace.
+        </p>
         {getFieldError("imageUrl") && (
           <span className="text-xs text-red-500">
             {String(getFieldError("imageUrl"))}
@@ -332,7 +361,7 @@ export default function EventsForm() {
         )}
       </div>
 
-      {/* Ticket Type */}
+      {/* Ticket Types */}
       {ticketTypes.map((ticket, index) => (
         <fieldset
           key={ticket.id}
@@ -351,7 +380,6 @@ export default function EventsForm() {
             )}
           </div>
 
-          {/* Ticket Type Name */}
           <div className="col-span-3 md:col-span-1">
             <label className="text-sm font-medium text-gray-700">Type</label>
             <input
@@ -365,27 +393,8 @@ export default function EventsForm() {
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white text-sm"
             />
-            {formik.touched.ticketTypes?.[index]?.name &&
-              (() => {
-                const ticketError = formik.errors.ticketTypes?.[index];
-
-                // Ensure ticketError is an object, not a string
-                if (
-                  ticketError &&
-                  typeof ticketError === "object" &&
-                  ticketError.name
-                ) {
-                  return (
-                    <span className="text-xs text-red-500">
-                      {ticketError.name}
-                    </span>
-                  );
-                }
-                return null;
-              })()}
           </div>
 
-          {/* Price */}
           <div className="col-span-3 md:col-span-1">
             <label className="text-sm font-medium text-gray-700">Price</label>
             <input
@@ -399,27 +408,8 @@ export default function EventsForm() {
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white text-sm"
             />
-            {formik.touched.ticketTypes?.[index]?.price &&
-              (() => {
-                const ticketError = formik.errors.ticketTypes?.[index];
-
-                // Ensure ticketError is an object, not a string
-                if (
-                  ticketError &&
-                  typeof ticketError === "object" &&
-                  ticketError.price
-                ) {
-                  return (
-                    <span className="text-xs text-red-500">
-                      {ticketError.price}
-                    </span>
-                  );
-                }
-                return null;
-              })()}
           </div>
 
-          {/* Seats */}
           <div className="col-span-3 md:col-span-1">
             <label className="text-sm font-medium text-gray-700">Seats</label>
             <input
@@ -433,24 +423,6 @@ export default function EventsForm() {
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white text-sm"
             />
-            {formik.touched.ticketTypes?.[index]?.seats &&
-              (() => {
-                const ticketError = formik.errors.ticketTypes?.[index];
-
-                // Ensure ticketError is an object, not a string
-                if (
-                  ticketError &&
-                  typeof ticketError === "object" &&
-                  ticketError?.seats
-                ) {
-                  return (
-                    <span className="text-xs text-red-500">
-                      {ticketError?.seats}
-                    </span>
-                  );
-                }
-                return null;
-              })()}
           </div>
         </fieldset>
       ))}
@@ -470,16 +442,17 @@ export default function EventsForm() {
           type="button"
           onClick={() => router.back()}
           className="px-5 py-2 rounded-md border border-gray-400 text-gray-700 hover:bg-gray-200 transition"
+          disabled={formik.isSubmitting}
         >
           Cancel
         </button>
 
         <button
           type="submit"
-          className="px-5 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
+          className="px-5 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={formik.isSubmitting}
         >
-          {formik.isSubmitting ? "Submitting..." : "Submit"}
+          {formik.isSubmitting ? "Updating..." : "Update Event"}
         </button>
       </div>
     </form>

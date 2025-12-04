@@ -68,7 +68,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // start corn jobs
-// startCronJobs();
+startCronJobs();
 
 app.listen(PORT, () => {
   console.log(`⚡️[server]: Server is running at http://localhost:${PORT}`);

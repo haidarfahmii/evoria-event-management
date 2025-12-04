@@ -1,32 +1,65 @@
-import { transporter } from "../config/nodemailer.config";
-import { emailTemplates } from "../utils/email-templates.util";
+import { mailService } from "./mail.service";
 import prisma from "../config/prisma.config";
-import { IEmailService } from "../@types/transaction.index";
+import { CLIENT_URL } from "../config/index.config";
+// Helper Format Rupiah
+const formatRupiah = (amount: number) => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
 
-export const emailService: IEmailService = {
-  async sendEmail(to: string, subject: string, html: string) {
-    try {
-      await transporter.sendMail({
-        from: `"Evoria Events" <${process.env.MAILTRAP_HOST}>`,
-        to,
-        subject,
-        html,
-      });
-      console.log(`✅ Email sent to ${to}: ${subject}`);
-    } catch (error) {
-      console.error(`❌ Failed to send email to ${to}:`, error);
-      throw error;
-    }
-  },
+// Helper Format Tanggal
+const formatDate = (date: Date) => {
+  return new Date(date).toLocaleDateString("id-ID", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
+export const emailService = {
+  /**
+   * 1. Email Transaksi Dibuat (Waiting Payment)
+   */
   async sendTransactionCreated(transactionId: string) {
-    console.log(`📧 Sending transaction created email for ${transactionId}`);
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: { user: true, event: true, ticketType: true },
+    });
+
+    if (!transaction) return;
+
+    await mailService.sendMail({
+      to: transaction.user.email,
+      subject: `Menunggu Pembayaran - ${transaction.event.name}`,
+      template: "transaction-created.html",
+      context: {
+        userName: transaction.user.name,
+        eventName: transaction.event.name,
+        ticketName: transaction.ticketType?.name,
+        qty: transaction.qty,
+        totalPrice: formatRupiah(transaction.finalPrice),
+        expiresAt: transaction.expiresAt
+          ? formatDate(transaction.expiresAt)
+          : "-",
+        link: `${CLIENT_URL}/member/tiket-saya`,
+        year: new Date().getFullYear(),
+      },
+    });
+
+    console.log(
+      `✅ Email sent: Transaction Created to ${transaction.user.email}`
+    );
   },
 
-  async sendPaymentReminder(transactionId: string) {
-    console.log(`📧 Sending payment reminder for ${transactionId}`);
-  },
-
+  /**
+   * 2. Email Transaksi Diterima (Approved by Organizer)
+   */
   async sendTransactionAccepted(transactionId: string) {
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
@@ -35,92 +68,179 @@ export const emailService: IEmailService = {
 
     if (!transaction) return;
 
-    const html = emailTemplates.transactionAccepted({
-      userName: transaction.user.name,
-      eventName: transaction.event.name,
-      transactionId: transaction.id,
-      qty: transaction.qty,
-      eventDate: new Date(transaction.event.startDate).toLocaleString("id-ID", {
-        dateStyle: "full",
-        timeStyle: "short",
-      }),
-      venue: `${transaction.event.venue}, ${transaction.event.city}`,
-    });
+    // Generate invoice ID sederhana untuk display
+    const invoiceId = `INV-${transaction.id.slice(-6).toUpperCase()}`;
 
-    await this.sendEmail(
-      transaction.user.email,
-      `✅ Payment Confirmed - ${transaction.event.name}`,
-      html
-    );
+    await mailService.sendMail({
+      to: transaction.user.email,
+      subject: `Tiket Terbit! - ${transaction.event.name}`,
+      template: "transaction-accepted.html",
+      context: {
+        userName: transaction.user.name,
+        eventName: transaction.event.name,
+        invoiceId: invoiceId,
+        venue: transaction.event.venue,
+        city: transaction.event.city,
+        eventDate: formatDate(transaction.event.startDate),
+        link: `${CLIENT_URL}/member/tiket-saya`,
+        year: new Date().getFullYear(),
+      },
+    });
   },
 
+  /**
+   * 3. Email Transaksi Ditolak (Rejected by Organizer)
+   */
   async sendTransactionRejected(transactionId: string, reason?: string) {
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
-      include: { user: true, event: true, coupon: true },
+      include: { user: true, event: true },
     });
 
     if (!transaction) return;
 
-    const html = emailTemplates.transactionRejected({
-      userName: transaction.user.name,
-      eventName: transaction.event.name,
-      transactionId: transaction.id,
-      reason,
-      pointsRestored: transaction.pointsUsed,
-      couponRestored: transaction.coupon?.code,
+    await mailService.sendMail({
+      to: transaction.user.email,
+      subject: `Transaksi Ditolak - ${transaction.event.name}`,
+      template: "transaction-rejected.html",
+      context: {
+        userName: transaction.user.name,
+        eventName: transaction.event.name,
+        reason: reason || "Bukti pembayaran tidak sesuai.",
+        year: new Date().getFullYear(),
+      },
+    });
+  },
+
+  /**
+   * 4. Email Pengingat Pembayaran (1 Jam sebelum expired)
+   */
+  async sendPaymentReminder(transactionId: string) {
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: { user: true, event: true },
     });
 
-    await this.sendEmail(
-      transaction.user.email,
-      `❌ Transaction Rejected - ${transaction.event.name}`,
-      html
-    );
+    if (!transaction) return;
+
+    await mailService.sendMail({
+      to: transaction.user.email,
+      subject: `⏰ Segera Selesaikan Pembayaran - ${transaction.event.name}`,
+      template: "payment-reminder.html",
+      context: {
+        userName: transaction.user.name,
+        eventName: transaction.event.name,
+        link: `${CLIENT_URL}/member/tiket-saya`,
+        year: new Date().getFullYear(),
+      },
+    });
   },
 
   async sendTransactionExpired(transactionId: string) {
+    console.log(
+      `📧 Attempting to send EXPIRED email for transaction: ${transactionId}`
+    );
+
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
       include: { user: true, event: true, coupon: true },
     });
 
-    if (!transaction) return;
+    if (!transaction) {
+      const error = `Transaction ${transactionId} not found when sending expired email`;
+      console.error(`❌ ${error}`);
+      throw new Error(error); // THROW ERROR instead of silent return
+    }
 
-    const html = emailTemplates.transactionExpired({
+    if (!transaction.user?.email) {
+      const error = `User email not found for transaction ${transactionId}`;
+      console.error(`❌ [EMAIL] ${error}`);
+      throw new Error(error);
+    }
+
+    const context = {
       userName: transaction.user.name,
       eventName: transaction.event.name,
       transactionId: transaction.id,
       pointsRestored: transaction.pointsUsed,
       couponRestored: transaction.coupon?.code,
-    });
+      year: new Date().getFullYear(),
+    };
 
-    await this.sendEmail(
-      transaction.user.email,
-      `⏰ Transaction Expired - ${transaction.event.name}`,
-      html
-    );
+    console.log(`📧 [EMAIL] Sending to: ${transaction.user.email}`);
+    console.log(`📧 [EMAIL] Context:`, JSON.stringify(context, null, 2));
+
+    try {
+      await mailService.sendMail({
+        to: transaction.user.email,
+        subject: `⏰ Transaksi Kadaluarsa - ${transaction.event.name}`,
+        template: "transaction-expired.html",
+        context,
+      });
+
+      console.log(
+        `✅ EXPIRED email sent successfully to ${transaction.user.email}`
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to send EXPIRED email to ${transaction.user.email}:`,
+        error
+      );
+      throw error; // Re-throw untuk di-handle oleh caller
+    }
   },
 
   async sendTransactionCancelled(transactionId: string) {
+    console.log(
+      `📧 Attempting to send CANCELLED email for transaction: ${transactionId}`
+    );
+
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
       include: { user: true, event: true, coupon: true },
     });
 
-    if (!transaction) return;
+    if (!transaction) {
+      const error = `Transaction ${transactionId} not found when sending cancelled email`;
+      console.error(`❌ ${error}`);
+      throw new Error(error);
+    }
 
-    const html = emailTemplates.transactionCancelled({
+    if (!transaction.user?.email) {
+      const error = `User email not found for transaction ${transactionId}`;
+      console.error(`❌ [EMAIL] ${error}`);
+      throw new Error(error);
+    }
+
+    const context = {
       userName: transaction.user.name,
       eventName: transaction.event.name,
       transactionId: transaction.id,
       pointsRestored: transaction.pointsUsed,
       couponRestored: transaction.coupon?.code,
-    });
+      year: new Date().getFullYear(),
+    };
 
-    await this.sendEmail(
-      transaction.user.email,
-      `⚠️ Transaction Cancelled - ${transaction.event.name}`,
-      html
-    );
+    console.log(`📧 [EMAIL] Sending to: ${transaction.user.email}`);
+    console.log(`📧 [EMAIL] Context:`, JSON.stringify(context, null, 2));
+
+    try {
+      await mailService.sendMail({
+        to: transaction.user.email,
+        subject: `⚠️ Transaksi Dibatalkan - ${transaction.event.name}`,
+        template: "transaction-cancelled.html",
+        context,
+      });
+
+      console.log(
+        `✅ CANCELLED email sent successfully to ${transaction.user.email}`
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to send CANCELLED email to ${transaction.user.email}:`,
+        error
+      );
+      throw error;
+    }
   },
 };

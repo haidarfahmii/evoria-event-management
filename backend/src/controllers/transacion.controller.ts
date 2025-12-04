@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { transactionService } from "../services/transaction.service";
 import {
+  CreatePromotionDTO,
   CreateTransactionDTO,
   UploadPaymentProofDTO,
 } from "../@types/transaction.index";
@@ -132,4 +133,95 @@ export const transactionController = {
       data: { transaction },
     });
   },
+  /*
+    Create new Promotion (Organizer membuat promotion pada event)
+    POST /:eventId/create-promotion
+  */
+  async createPromotion(req: Request, res: Response, next: NextFunction) {
+    const { code, type, value, maxUsage, startDate, endDate } = req.body;
+    const { eventId } = req.params;
+
+    const data: CreatePromotionDTO = {
+      eventId,
+      code,
+      type,
+      value: Number(value),
+      maxUsage: Number(maxUsage),
+      startDate,
+      endDate
+    }
+
+    const promotion = await transactionService.createPromotion(data)
+
+    res.status(201).json({
+      success: true,
+      message: "Event Promotion created successfully",
+      data: {
+        promotion
+      }
+    })
+  },
+
+  /**
+   * Get Promotion by Event ID
+   */
+  async getPromotionByEventId(req: Request, res: Response, next: NextFunction) {
+    const { eventId } = req.params;
+
+    const promotion = await transactionService.getPromotionByEventId(eventId)
+
+    res.status(200).json({
+      success: true,
+      message: "Event Promotion retrieved by Event ID successfully",
+      data: {
+        promotion
+      }
+    })
+  },
+
+  /**
+   * Get Promotion by ID
+   */
+  async getPromotionbyId(req: Request, res: Response, next: NextFunction) {
+    const { id } = req.params;
+
+    const promotion = await transactionService.getPromotionById(id)
+
+    res.status(200).json({
+      success: true,
+      message: "Event Promotion retrieved by Promotion ID successfully",
+      data: {
+        promotion
+      }
+    })
+  },
+
+  async deletePromotionByEventId(req: Request, res: Response, next: NextFunction) {
+    const { eventId } = req.params;
+
+    const promotion = await transactionService.deletePromotionByEventId(eventId)
+
+    res.status(200).json({
+      success: true,
+      message: "Event Promotion retrieved by Event ID successfully",
+      data: {
+        promotion
+      }
+    })
+  },
+
+  async deletePromotionById(req: Request, res: Response, next: NextFunction) {
+    const { id } = req.params;
+
+    const promotion = await transactionService.deletePromotionById(id)
+
+    res.status(200).json({
+      success: true,
+      message: "Delete Promotion by Promotion ID successfully",
+      data: {
+        promotion
+      }
+    })
+  }
 };
+

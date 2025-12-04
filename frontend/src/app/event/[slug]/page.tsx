@@ -247,7 +247,7 @@ export default function EventDetailPage({ params }: { params: Promise<Params> })
                 </section>
 
                 {/* Ticketing Section - Now a Separate Component */}
-                <TicketingSection ticketTypes={event.ticketTypes} />
+                <TicketingSection ticketTypes={event.ticketTypes} eventId={event.id}/>
             </div>
         </main>
     )

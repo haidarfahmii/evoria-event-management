@@ -6,6 +6,7 @@ import {
   TicketType,
   Coupon,
   Promotion,
+  Prisma,
 } from "../generated/prisma/client";
 
 // DTO (Data Transfer Object)
@@ -17,6 +18,16 @@ export interface CreateTransactionDTO {
   pointsUsed?: number;
   couponId?: string;
   promotionId?: string;
+}
+
+export interface CreatePromotionDTO {
+  eventId: string;
+  code: string;
+  type: string;
+  value: number;
+  maxUsage: number;
+  startDate: Date;
+  endDate: Date;
 }
 
 export interface UploadPaymentProofDTO {
@@ -53,6 +64,7 @@ export interface TransactionWithRelations extends Transaction {
 
 export interface TransactionSummary {
   id: string;
+  invoiceId: string;
   userId: string;
   userName: string;
   userEmail: string;
@@ -67,6 +79,20 @@ export interface TransactionSummary {
   paymentProofUploadedAt: Date | null;
   expiresAt: Date | null;
   organizerResponseDeadline: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PromotionSummary {
+  id: string;
+  eventId: string; 
+  code: string;
+  type: string; // 'FIXED' | 'PERCENTAGE'
+  value: number;
+  maxUsage: number | null;
+  // currentUsage: number; // Useful to see how many used it
+  startDate: Date;
+  endDate: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -98,6 +124,11 @@ export interface ITransactionService {
   ): Promise<TransactionWithRelations | null>;
   getUserTransactions(userId: string): Promise<TransactionSummary[]>;
   canModifyTransaction(transactionId: string): Promise<boolean>;
+  createPromotion(data: CreatePromotionDTO): Promise<Promotion>;
+  getPromotionByEventId(eventId: string): Promise<PromotionSummary[]>;
+  getPromotionById(Id: string): Promise<PromotionSummary | null>;
+  deletePromotionByEventId(eventId: string): Promise<Prisma.BatchPayload>;
+  deletePromotionById(id: string): Promise<PromotionSummary | null>;
 }
 
 export interface IDashboardService {

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Role } from "@/@types";
-import { timeStamp } from "console";
+import { useBreadcrumb } from "@/context/BreadcrumbContext";
 
 // Mapping path URL ke nama yang lebih user-friendly (Bahasa Indonesia)
 const pathLabels: Record<string, string> = {
@@ -25,12 +25,19 @@ const pathLabels: Record<string, string> = {
   settings: "Pengaturan",
   dashboard: "Organizer Dashboard",
   "create-event": "Buat Event",
+  events: "Event Saya",
+  "manage-access": "Kelola Akses",
+  "informasi-dasar": "Informasi Dasar",
+  pengaturan: "Pengaturan",
 };
 
 export default function DashboardHeader() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
+
+  // ambil label dinamis dari context
+  const { labels } = useBreadcrumb();
 
   // Helper untuk generate breadcrumbs
   const generateBreadcrumbs = () => {
@@ -42,23 +49,34 @@ export default function DashboardHeader() {
       .split("/")
       .filter((v) => v.length > 0 && v !== "member");
 
-    // Build array breadcrumb
-    const crumblist = asPathNestedRoutes.map((subpath, idx) => {
-      // Reconstruct URL untuk href
-      const href = "/" + asPathNestedRoutes.slice(0, idx + 1).join("/");
+    return [
+      { href: "/", title: "Beranda" },
+      ...asPathNestedRoutes.map((subpath, idx) => {
+        const href = "/" + asPathNestedRoutes.slice(0, idx + 1).join("/");
 
-      // Ambil label dari mapping atau format manual
-      let title =
-        pathLabels[subpath] ||
-        subpath
-          .replace(/-/g, " ")
-          .replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize
+        /**
+         * Logika prioritas
+         * 1. Cek di Context (Dynamic ID -> Nama event)
+         * 2. Cek di Static Map (pathLabels)
+         * 3. Format manual (slug -> Title Case)
+         */
 
-      return { href, title };
-    });
+        let title = labels[subpath] || pathLabels[subpath];
 
-    // Tambahkan Home di awal
-    return [{ href: "/", title: "Beranda" }, ...crumblist];
+        if (!title) {
+          // jika tidak ada di context/static, format manual
+          title = subpath
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+          // opsional: jika masih terlihat seperti ID panjang (misal cuid), potong tampilan nya
+          if (subpath.length > 20 && !subpath.includes(" ")) {
+            title = `${subpath.slice(0, 8)}...`;
+          }
+        }
+
+        return { href, title };
+      }),
+    ];
   };
 
   const breadcrumbs = generateBreadcrumbs();
@@ -94,28 +112,26 @@ export default function DashboardHeader() {
             const isHome = index === 0;
 
             return (
-              <Fragment key={crumb.href}>
+              <Fragment key={index}>
                 <li className="flex items-center">
                   {isHome ? (
                     <Link
-                      href={crumb.href}
+                      href="/member/dashboard"
                       className="hover:text-blue-600 transition-colors flex items-center p-1 rounded-md hover:bg-slate-100"
                       title="Kembali ke Beranda"
                     >
                       <Home size={16} />
                     </Link>
                   ) : (
-                    <Link
-                      href={crumb.href}
-                      className={`hover:text-blue-600 transition-colors px-1 rounded-md ${
+                    <span
+                      className={`px-1 rounded-md max-w-[200px] truncate cursor-default ${
                         isLast
-                          ? "font-semibold text-slate-800 pointer-events-none"
-                          : "hover:bg-slate-100"
+                          ? "font-semibold text-slate-800" // Item terakhir (Lokasi saat ini) lebih gelap
+                          : "text-slate-400" // Item tengah terlihat "disabled" (abu-abu)
                       }`}
-                      aria-current={isLast ? "page" : undefined}
                     >
                       {crumb.title}
-                    </Link>
+                    </span>
                   )}
                 </li>
                 {!isLast && (

@@ -95,7 +95,7 @@ export const createEventsValidator = [
                 if (!name || typeof name !== "string" || name.length < 2 || name.length > 50) {
                     throw new Error("Ticket type name must be 2-50 characters");
                 }
-                if (typeof price !== "number" || isNaN(price) || price <= 0) {
+                if (typeof price !== "number" || isNaN(price) || price < 0) {
                     throw new Error("Price must be a positive number");
                 }
                 if (!Number.isInteger(seats) || seats <= 0) {
