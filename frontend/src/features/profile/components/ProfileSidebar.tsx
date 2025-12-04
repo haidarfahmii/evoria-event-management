@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { FiCamera, FiGift, FiCreditCard } from "react-icons/fi";

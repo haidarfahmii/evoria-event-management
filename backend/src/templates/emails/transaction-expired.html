@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: #333;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .header {
+        background-color: #f59e0b;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+      }
+      .content {
+        padding: 30px;
+        background-color: #fff;
+      }
+      .warning-box {
+        background-color: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 15px;
+        margin: 20px 0;
+        color: #92400e;
+      }
+      .info-box {
+        background-color: #f0f9ff;
+        border-left: 4px solid #3b82f6;
+        padding: 15px;
+        margin: 20px 0;
+        color: #1e40af;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #3b82f6;
+        color: #fff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: bold;
+        margin-top: 20px;
+      }
+      .footer {
+        background-color: #f1f5f9;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+      }
+      .transaction-id {
+        font-family: monospace;
+        background-color: #f1f5f9;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>⏰ Transaksi Kadaluarsa</h1>
+      </div>
+      <div class="content">
+        <p>Halo <strong>{{userName}}</strong>,</p>
+        <p>
+          Mohon maaf, transaksi Anda untuk event
+          <strong>{{eventName}}</strong> telah kadaluarsa karena belum ada
+          pembayaran dalam waktu yang ditentukan.
+        </p>
+
+        <div class="warning-box">
+          <strong>Transaksi ID:</strong>
+          <span class="transaction-id">{{transactionId}}</span><br />
+          <strong>Status:</strong> Kadaluarsa (Expired)<br />
+          <strong>Alasan:</strong> Tidak ada upload bukti pembayaran dalam waktu
+          2 jam
+        </div>
+
+        {{#if pointsRestored}}
+        <div class="info-box">
+          <strong>✅ Poin Dikembalikan:</strong> {{pointsRestored}} poin telah
+          dikembalikan ke akun Anda dan dapat digunakan kembali.
+        </div>
+        {{/if}} {{#if couponRestored}}
+        <div class="info-box">
+          <strong>✅ Kupon Dikembalikan:</strong> Kupon
+          <strong>{{couponRestored}}</strong> telah dikembalikan dan dapat
+          digunakan kembali.
+        </div>
+        {{/if}}
+
+        <p>
+          Anda dapat melakukan pemesanan ulang untuk event ini. Pastikan untuk
+          menyelesaikan pembayaran dalam waktu yang ditentukan.
+        </p>
+
+        <div style="text-align: center">
+          <a href="https://evoria.com/events" class="btn">Cari Event Lainnya</a>
+        </div>
+      </div>
+      <div class="footer">
+        <p>&copy; {{year}} Evoria Event Management</p>
+        <p>Email ini dikirim otomatis, mohon tidak membalas.</p>
+      </div>
+    </div>
+  </body>
+</html>

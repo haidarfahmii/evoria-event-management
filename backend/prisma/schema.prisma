@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
@@ -30,8 +30,8 @@ enum TransactionStatus {
   WAITING_CONFIRMATION  // user sudah upload, menunggu persetujuan organizer
   DONE                  // disetujui organizer
   REJECTED              // ditolak organizer
-  CANCELLED             // expired karena > 2 jam belum upload paymentproof
-  EXPIRED               // cancelled karena organizer tidak konfirmasi
+  CANCELLED             // cancelled karena organizer tidak konfirmasi
+  EXPIRED               // expired karena > 2 jam belum upload paymentproof
 }
 
 model User {

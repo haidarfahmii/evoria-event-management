@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: #333;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .header {
+        background-color: #0f172a;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+      }
+      .content {
+        padding: 30px;
+        background-color: #fff;
+      }
+      .details {
+        background-color: #f8fafc;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border: 1px dashed #cbd5e1;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #2563eb;
+        color: #fff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: bold;
+        margin-top: 20px;
+      }
+      .footer {
+        background-color: #f1f5f9;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+      }
+      .alert {
+        color: #ef4444;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Menunggu Pembayaran</h1>
+      </div>
+      <div class="content">
+        <p>Halo <strong>{{userName}}</strong>,</p>
+        <p>
+          Terima kasih telah memesan tiket di Evoria. Berikut adalah detail
+          transaksi Anda:
+        </p>
+
+        <div class="details">
+          <p><strong>Event:</strong> {{eventName}}</p>
+          <p><strong>Tiket:</strong> {{ticketName}} ({{qty}}x)</p>
+          <p><strong>Total Tagihan:</strong> {{totalPrice}}</p>
+          <p><strong>Batas Waktu:</strong> {{expiresAt}}</p>
+        </div>
+
+        <p class="alert">
+          ⚠️ Harap segera lakukan pembayaran dan upload bukti transfer sebelum
+          batas waktu berakhir.
+        </p>
+
+        <div style="text-align: center">
+          <a href="{{link}}" class="btn">Upload Bukti Pembayaran</a>
+        </div>
+      </div>
+      <div class="footer">&copy; {{year}} Evoria Event Management</div>
+    </div>
+  </body>
+</html>

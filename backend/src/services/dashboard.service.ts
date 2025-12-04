@@ -10,6 +10,7 @@ import {
 import { TransactionStatus } from "../generated/prisma/client";
 import { emailService } from "./notif-mail-transaction.service";
 import { transactionService } from "./transaction.service";
+import { generateInvoiceId } from "../utils/invoice-generator";
 
 export const dashboardService: IDashboardService = {
   async getOrganizerTransactions(
@@ -39,6 +40,7 @@ export const dashboardService: IDashboardService = {
 
     return transactions.map((t) => ({
       id: t.id,
+      invoiceId: generateInvoiceId(t.id, t.createdAt),
       userId: t.userId,
       userName: t.user.name,
       userEmail: t.user.email,
@@ -84,6 +86,7 @@ export const dashboardService: IDashboardService = {
 
     return transactions.map((t) => ({
       id: t.id,
+      invoiceId: generateInvoiceId(t.id, t.createdAt),
       userId: t.userId,
       userName: t.user.name,
       userEmail: t.user.email,
@@ -132,7 +135,7 @@ export const dashboardService: IDashboardService = {
     });
 
     try {
-      await emailService.sendTransactionAccepted(data.transactionId);
+      emailService.sendTransactionAccepted(data.transactionId);
     } catch (error) {
       console.error("Failed to send acceptance email:", error);
     }
@@ -168,13 +171,12 @@ export const dashboardService: IDashboardService = {
       TransactionStatus.REJECTED
     );
 
+    const rejectionReason = data.reason || "Pembayaran tidak valid.";
+
     try {
-      await emailService.sendTransactionRejected(
-        data.transactionId,
-        data.reason
-      );
+      emailService.sendTransactionRejected(data.transactionId, rejectionReason);
     } catch (error) {
-      console.error("Failed to send rejection email:", error);
+      console.error("Failed to send acceptance email:", error);
     }
 
     return rollbackResult;
@@ -261,6 +263,7 @@ export const dashboardService: IDashboardService = {
 
     return transactions.map((t) => ({
       id: t.id,
+      invoiceId: generateInvoiceId(t.id, t.createdAt),
       userId: t.userId,
       userName: t.user.name,
       userEmail: t.user.email,
