@@ -1,6 +1,8 @@
 import { mailService } from "./mail.service";
 import prisma from "../config/prisma.config";
 import { CLIENT_URL } from "../config/index.config";
+import { generateInvoiceId } from "../utils/invoice-generator";
+
 // Helper Format Rupiah
 const formatRupiah = (amount: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -34,11 +36,14 @@ export const emailService = {
 
     if (!transaction) return;
 
+    const invoiceId = generateInvoiceId(transaction.id, transaction.createdAt);
+
     await mailService.sendMail({
       to: transaction.user.email,
       subject: `Menunggu Pembayaran - ${transaction.event.name}`,
       template: "transaction-created.html",
       context: {
+        transactionId: invoiceId,
         userName: transaction.user.name,
         eventName: transaction.event.name,
         ticketName: transaction.ticketType?.name,
@@ -68,8 +73,7 @@ export const emailService = {
 
     if (!transaction) return;
 
-    // Generate invoice ID sederhana untuk display
-    const invoiceId = `INV-${transaction.id.slice(-6).toUpperCase()}`;
+    const invoiceId = generateInvoiceId(transaction.id, transaction.createdAt);
 
     await mailService.sendMail({
       to: transaction.user.email,
@@ -78,7 +82,7 @@ export const emailService = {
       context: {
         userName: transaction.user.name,
         eventName: transaction.event.name,
-        invoiceId: invoiceId,
+        invoiceId,
         venue: transaction.event.venue,
         city: transaction.event.city,
         eventDate: formatDate(transaction.event.startDate),
@@ -99,6 +103,8 @@ export const emailService = {
 
     if (!transaction) return;
 
+    const invoiceId = generateInvoiceId(transaction.id, transaction.createdAt);
+
     await mailService.sendMail({
       to: transaction.user.email,
       subject: `Transaksi Ditolak - ${transaction.event.name}`,
@@ -106,6 +112,7 @@ export const emailService = {
       context: {
         userName: transaction.user.name,
         eventName: transaction.event.name,
+        transactionId: invoiceId,
         reason: reason || "Bukti pembayaran tidak sesuai.",
         year: new Date().getFullYear(),
       },
@@ -152,6 +159,8 @@ export const emailService = {
       throw new Error(error); // THROW ERROR instead of silent return
     }
 
+    const invoiceId = generateInvoiceId(transaction.id, transaction.createdAt);
+
     if (!transaction.user?.email) {
       const error = `User email not found for transaction ${transactionId}`;
       console.error(`❌ [EMAIL] ${error}`);
@@ -161,7 +170,7 @@ export const emailService = {
     const context = {
       userName: transaction.user.name,
       eventName: transaction.event.name,
-      transactionId: transaction.id,
+      transactionId: invoiceId,
       pointsRestored: transaction.pointsUsed,
       couponRestored: transaction.coupon?.code,
       year: new Date().getFullYear(),
@@ -206,6 +215,8 @@ export const emailService = {
       throw new Error(error);
     }
 
+    const invoiceId = generateInvoiceId(transaction.id, transaction.createdAt);
+
     if (!transaction.user?.email) {
       const error = `User email not found for transaction ${transactionId}`;
       console.error(`❌ [EMAIL] ${error}`);
@@ -215,7 +226,7 @@ export const emailService = {
     const context = {
       userName: transaction.user.name,
       eventName: transaction.event.name,
-      transactionId: transaction.id,
+      transactionId: invoiceId,
       pointsRestored: transaction.pointsUsed,
       couponRestored: transaction.coupon?.code,
       year: new Date().getFullYear(),
