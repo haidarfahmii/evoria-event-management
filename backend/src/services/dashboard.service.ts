@@ -360,6 +360,74 @@ export const dashboardService: IDashboardService = {
     return stats;
   },
 
+  async getRecentTransactions(
+    organizerId: string,
+    limit: number = 5
+  ): Promise<TransactionSummary[]> {
+    const events = await prisma.event.findMany({
+      where: {
+        organizerId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    const eventIds = events.map((e) => e.id);
+
+    if (eventIds.length === 0) return [];
+
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        eventId: { in: eventIds },
+        status: {
+          in: [
+            TransactionStatus.DONE, // ✅ Transaksi berhasil
+            TransactionStatus.WAITING_CONFIRMATION, // ⏳ Menunggu approval organizer
+            TransactionStatus.WAITING_PAYMENT, // ⏳ Menunggu customer upload bukti
+          ],
+        },
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        event: { select: { id: true, name: true } },
+        ticketType: { select: { id: true, name: true, price: true } },
+      },
+      // Prioritaskan transaksi yang butuh action
+      orderBy: [
+        {
+          // WAITING_CONFIRMATION dulu (butuh approval organizer - highest priority)
+          status: "asc", // WAITING_PAYMENT < WAITING_CONFIRMATION < DONE
+        },
+        {
+          createdAt: "desc", // Kemudian sort by tanggal terbaru
+        },
+      ],
+      // ✅ LIMIT: Hanya ambil N transaksi terakhir
+      take: limit,
+    });
+
+    return transactions.map((t) => ({
+      id: t.id,
+      invoiceId: generateInvoiceId(t.id, t.createdAt),
+      userId: t.userId,
+      userName: t.user.name,
+      userEmail: t.user.email,
+      eventId: t.eventId,
+      eventName: t.event.name,
+      qty: t.qty,
+      totalPrice: t.totalPrice,
+      finalPrice: t.finalPrice,
+      pointsUsed: t.pointsUsed,
+      status: t.status,
+      paymentProof: t.paymentProof,
+      paymentProofUploadedAt: t.paymentProofUploadedAt,
+      expiresAt: t.expiresAt,
+      organizerResponseDeadline: t.organizerResponseDeadline,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+    }));
+  },
+
   async getEventAttendees(
     eventId: string,
     organizerId: string

@@ -68,6 +68,7 @@ export interface TransactionSummary {
   userId: string;
   userName: string;
   userEmail: string;
+  userAvatarUrl?: string;
   eventId: string;
   eventName: string;
   qty: number;
@@ -85,7 +86,7 @@ export interface TransactionSummary {
 
 export interface PromotionSummary {
   id: string;
-  eventId: string; 
+  eventId: string;
   code: string;
   type: string; // 'FIXED' | 'PERCENTAGE'
   value: number;
@@ -146,6 +147,10 @@ export interface IDashboardService {
   getEventAttendees(
     eventId: string,
     organizerId: string
+  ): Promise<TransactionSummary[]>;
+  getRecentTransactions(
+    organizerId: string,
+    limit?: number
   ): Promise<TransactionSummary[]>;
 }
 

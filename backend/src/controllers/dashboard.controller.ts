@@ -27,6 +27,26 @@ export const dashboardController = {
     });
   },
 
+  async getRecentTransactions(req: Request, res: Response, next: NextFunction) {
+    const organizerId = res?.locals?.payload?.userId;
+    // Query param untuk limit (default 5)
+    const limit = parseInt(req.query.limit as string) || 5;
+
+    const transactions = await dashboardService.getRecentTransactions(
+      organizerId,
+      limit
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Recent transactions retrieved successfully",
+      data: {
+        transactions,
+        total: transactions.length,
+      },
+    });
+  },
+
   async getEventTransactions(req: Request, res: Response, next: NextFunction) {
     const organizerId = res?.locals?.payload?.userId;
     const { eventId } = req.params;
