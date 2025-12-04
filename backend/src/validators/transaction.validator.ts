@@ -77,9 +77,22 @@ export const createPromotionValidator = [
     .isNumeric()
     .withMessage("Value must be a number")
     .custom((value, { req }) => {
-      if (req.body.type === "PERCENTAGE" && value < 10 || value > 100 ) {
-        throw new Error("Percentage value must be between 5 and 100");
+      const { type } = req.body;
+
+      // Validate Percentage
+      if (type === "PERCENTAGE") {
+        if (value < 10 || value > 100) {
+          throw new Error("Percentage value must be between 10 and 100");
+        }
       }
+
+      // Validate Flat
+      if (type === "FLAT") {
+        if (value < 1000) {
+          throw new Error("Flat discount value must be at least 1000");
+        }
+      }
+
       return true;
     }),
 

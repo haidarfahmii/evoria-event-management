@@ -112,6 +112,54 @@ export const transactionService: ITransactionService = {
       promotionId,
     } = data;
 
+    // Pengecekan apakah user sudah pernah membeli tiket ini
+
+    const eventData = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: { endDate: true },
+    });
+
+    if (!eventData) throw AppError("Event not found", 404);
+
+    if (new Date() < eventData.endDate) {
+      const existingActiveTicket = await prisma.transaction.findFirst({
+        where: {
+          userId,
+          eventId,
+          status: {
+            in: [
+              TransactionStatus.DONE,
+              TransactionStatus.WAITING_PAYMENT,
+              TransactionStatus.WAITING_CONFIRMATION,
+            ],
+          },
+          OR: [
+            { status: TransactionStatus.DONE },
+            {
+              status: {
+                in: [
+                  TransactionStatus.WAITING_PAYMENT,
+                  TransactionStatus.WAITING_CONFIRMATION,
+                ],
+              },
+              expiresAt: { gt: new Date() },
+            },
+            {
+              status: TransactionStatus.WAITING_CONFIRMATION,
+              organizerResponseDeadline: { gt: new Date() },
+            }
+          ]
+        },
+      });
+
+      if (existingActiveTicket) {
+        // Pengguna sudah memiliki tiket (lunas atau sedang dalam proses pembayaran/konfirmasi)
+        throw AppError(
+          "Anda sudah memiliki tiket aktif atau sedang menunggu pembayaran/konfirmasi untuk acara ini.",409
+        );
+      }
+    }
+    
     const newTransaction = await prisma.$transaction(async (tx) => {
       // Check Ticket & Seats
       const ticket = await tx.ticketType.findUnique({
