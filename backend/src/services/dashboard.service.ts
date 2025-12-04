@@ -186,6 +186,7 @@ export const dashboardService: IDashboardService = {
     organizerId: string,
     period: "day" | "month" | "year"
   ): Promise<Record<string, number>> {
+    // Get all events for this organizer
     const events = await prisma.event.findMany({
       where: {
         organizerId,
@@ -198,32 +199,163 @@ export const dashboardService: IDashboardService = {
 
     if (eventIds.length === 0) return {};
 
+    // Calculate date range based on period
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date;
+
+    if (period === "day") {
+      // TODAY ONLY: from 00:00:00 to 23:59:59 TODAY
+      startDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        0,
+        0,
+        0,
+        0
+      );
+      endDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+        999
+      );
+    } else if (period === "month") {
+      // CURRENT MONTH: from 1st to last day of current month
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      endDate = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+    } else {
+      // CURRENT YEAR: from Jan 1 to Dec 31 of current year
+      startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+    }
+
+    console.log(`[Dashboard] Period: ${period}`);
+    console.log(
+      `[Dashboard] Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`
+    );
+
+    // ✅ Query transactions with date filter
     const transactions = await prisma.transaction.findMany({
       where: {
         eventId: { in: eventIds },
         status: TransactionStatus.DONE,
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
       },
-      select: { finalPrice: true, createdAt: true },
+      select: {
+        finalPrice: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
     });
 
+    console.log(`[Dashboard] Found ${transactions.length} transactions`);
+
+    if (transactions.length === 0) return {};
+
+    // Group and aggregate based on period
     const stats: Record<string, number> = {};
 
-    transactions.forEach((t) => {
-      let key: string;
-      const date = new Date(t.createdAt);
+    if (period === "day") {
+      // HARIAN: Show only TODAY with single entry
+      let totalToday = 0;
 
-      if (period === "day") {
-        key = date.toISOString().split("T")[0];
-      } else if (period === "month") {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        key = `${year}-${month}`;
-      } else {
-        key = String(date.getFullYear());
-      }
+      transactions.forEach((t) => {
+        totalToday += t.finalPrice;
+      });
 
-      stats[key] = (stats[key] || 0) + t.finalPrice;
-    });
+      const todayKey = now.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+      });
+
+      stats[todayKey] = totalToday;
+
+      console.log(`[Dashboard] Day stats:`, stats);
+    } else if (period === "month") {
+      // BULANAN: Show each DAY in current month
+      // Format: "1 Des", "2 Des", "3 Des", ...
+
+      transactions.forEach((t) => {
+        const date = new Date(t.createdAt);
+        const dayKey = date.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+        });
+
+        stats[dayKey] = (stats[dayKey] || 0) + t.finalPrice;
+      });
+
+      // Sort by day number
+      const sortedStats: Record<string, number> = {};
+      Object.keys(stats)
+        .sort((a, b) => {
+          const dayA = parseInt(a.split(" ")[0]);
+          const dayB = parseInt(b.split(" ")[0]);
+          return dayA - dayB;
+        })
+        .forEach((key) => {
+          sortedStats[key] = stats[key];
+        });
+
+      console.log(`[Dashboard] Month stats:`, sortedStats);
+      return sortedStats;
+    } else {
+      // TAHUNAN: Show each MONTH in current year
+      // Format: "Jan", "Feb", "Mar", ...
+
+      transactions.forEach((t) => {
+        const date = new Date(t.createdAt);
+        const monthKey = date.toLocaleDateString("id-ID", {
+          month: "short",
+        });
+
+        stats[monthKey] = (stats[monthKey] || 0) + t.finalPrice;
+      });
+
+      // Sort by month order
+      const monthOrder = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "Mei",
+        "Jun",
+        "Jul",
+        "Agu",
+        "Sep",
+        "Okt",
+        "Nov",
+        "Des",
+      ];
+      const sortedStats: Record<string, number> = {};
+
+      monthOrder.forEach((month) => {
+        if (stats[month]) {
+          sortedStats[month] = stats[month];
+        }
+      });
+
+      console.log(`[Dashboard] Year stats:`, sortedStats);
+      return sortedStats;
+    }
 
     return stats;
   },

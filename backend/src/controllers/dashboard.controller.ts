@@ -78,7 +78,7 @@ export const dashboardController = {
 
   async getRevenueStats(req: Request, res: Response, next: NextFunction) {
     const organizerId = res?.locals?.payload?.userId;
-    const period = (req.params.period as "day" | "month" | "year") || "month";
+    const period = (req.query.period as "day" | "month" | "year") || "month";
 
     if (!["day", "month", "year"].includes(period)) {
       return res.status(400).json({
