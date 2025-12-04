@@ -11,12 +11,12 @@ import {
   User,
   LogOut,
   ChevronDown,
-  Settings,
   CalendarPlus,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Role } from "@/@types";
 import { useBreadcrumb } from "@/context/BreadcrumbContext";
+import { SIDEBAR_ITEMS, SidebarGroup } from "@/config/navigation";
 
 // Mapping path URL ke nama yang lebih user-friendly (Bahasa Indonesia)
 const pathLabels: Record<string, string> = {
@@ -83,24 +83,29 @@ export default function DashboardHeader() {
   const user = session?.user;
   const isOrganizer = user?.role === Role.ORGANIZER;
 
+  // Ambil menu items berdasarkan role dari SIDEBAR_ITEMS
+  const role = session?.user?.role;
+  const menuGroups: SidebarGroup[] =
+    role === Role.ORGANIZER ? SIDEBAR_ITEMS.organizer : SIDEBAR_ITEMS.customer;
+
   // Debugging: Cek di console browser apakah nama berubah saat update profil
-  useEffect(() => {
-    if (status === "authenticated") {
-      console.log("DashboardHeader Session Updated:", {
-        name: session?.user?.name,
-        avatarUrl: session?.user?.avatarUrl,
-        timeStamp: new Date().toISOString(),
-      });
-    }
-  }, [session, status]);
+  // useEffect(() => {
+  //   if (status === "authenticated") {
+  //     console.log("DashboardHeader Session Updated:", {
+  //       name: session?.user?.name,
+  //       avatarUrl: session?.user?.avatarUrl,
+  //       timeStamp: new Date().toISOString(),
+  //     });
+  //   }
+  // }, [session, status]);
 
   // debugging
-  useEffect(() => {
-    console.log("[Dashboard Header] initial Avatar URL:", user?.avatarUrl);
-  });
+  // useEffect(() => {
+  //   console.log("[Dashboard Header] initial Avatar URL:", user?.avatarUrl);
+  // });
 
   return (
-    <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6  shadow-sm">
+    <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm">
       {/* Left: Breadcrumbs */}
       <nav
         aria-label="Breadcrumb"
@@ -228,51 +233,87 @@ export default function DashboardHeader() {
                 className="fixed inset-0 z-10"
                 onClick={() => setIsUserMenuOpen(false)}
               ></div>
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-1 z-20 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                {/* Mobile User Info in Dropdown */}
-                <div className="md:hidden px-4 py-3 border-b border-slate-50 bg-slate-50/50">
-                  <p className="text-sm font-semibold text-slate-800">
-                    {user?.name}
-                  </p>
-                  <p className="text-xs text-slate-500 truncate">
-                    {user?.email}
-                  </p>
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-20 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                {/* User Info Header */}
+                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-slate-300">
+                      {user?.avatarUrl ? (
+                        <Image
+                          src={user.avatarUrl}
+                          alt={user.name || "User"}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User size={20} className="text-slate-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">
+                        {user?.name}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {user?.email}
+                      </p>
+                      <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-sm mt-1 inline-block font-medium">
+                        {user?.role}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-1">
-                  {isOrganizer && (
-                    <Link
-                      href="/member/dashboard"
-                      className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <Home size={16} />
-                      <span>Dashboard Organizer</span>
-                    </Link>
-                  )}
-                  <Link
-                    href="/member/profile/informasi-dasar"
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    <User size={16} />
-                    <span>Profil Saya</span>
-                  </Link>
+                {/* Menu Items dari Sidebar */}
+                <div className="py-2">
+                  {menuGroups.map((group, groupIndex) => (
+                    <div key={groupIndex}>
+                      {/* Group Label */}
+                      <div className="px-4 py-2">
+                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                          {group.group}
+                        </h3>
+                      </div>
 
-                  <Link
-                    href="/member/profile/pengaturan"
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    <Settings size={16} />
-                    <span>Pengaturan</span>
-                  </Link>
+                      {/* Group Items */}
+                      <div className="px-2 space-y-1">
+                        {group.items.map((item, itemIndex) => {
+                          const Icon = item.icon;
+                          const isActive =
+                            pathname === item.href ||
+                            pathname.startsWith(item.href + "/");
+
+                          return (
+                            <Link
+                              key={itemIndex}
+                              href={item.href}
+                              className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-all ${
+                                isActive
+                                  ? "bg-blue-50 text-blue-600 font-medium"
+                                  : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+                              }`}
+                              onClick={() => setIsUserMenuOpen(false)}
+                            >
+                              <Icon size={16} className="shrink-0" />
+                              <span className="truncate">{item.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+
+                      {/* Separator between groups */}
+                      {groupIndex < menuGroups.length - 1 && (
+                        <div className="my-2 border-t border-slate-100"></div>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
-                <div className="border-t border-slate-100 p-1 mt-1">
+                {/* Logout Button */}
+                <div className="border-t border-slate-100 px-2 pt-2">
                   <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left font-medium"
                   >
                     <LogOut size={16} />
                     <span>Keluar</span>
