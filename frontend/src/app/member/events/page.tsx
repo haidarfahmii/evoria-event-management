@@ -342,7 +342,7 @@ export default function ManageEventsPage() {
                     {/* Status Badge */}
                     {new Date(event.endDate) >= new Date() ? (
                       <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">
-                        LIVE
+                        ACTIVE
                       </span>
                     ) : (
                       <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full">

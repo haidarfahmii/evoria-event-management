@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { FiCamera, FiGift, FiCreditCard } from "react-icons/fi";
+import { useState } from "react";
+import { FiCamera, FiGift, FiCreditCard, FiCopy } from "react-icons/fi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProfileData, PointData, CouponData } from "@/@types";
 
@@ -23,9 +24,33 @@ export default function ProfileSidebar({
   onAvatarChange,
   fileInputRef,
 }: ProfileSidebarProps) {
+  const [isCouponExpanded, setIsCouponExpanded] = useState<boolean>(false);
+
   const handleCopyReferral = () => {
     navigator.clipboard.writeText(user?.referralCode || "");
     toast.info("Copied to clipboard!");
+  };
+
+  // handler untuk copy kode coupon
+  const handleCopyCoupon = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success(`Coupon code "${code}" copied!`);
+  };
+
+  // handler format tanggal kadaluwarsa
+  const formatExpiryDate = (dateString: string) => {
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // handler cek jika coupon sudah expire
+  const isCouponExpired = (dateString: string) => {
+    return new Date(dateString) < new Date();
   };
 
   return (
@@ -97,18 +122,106 @@ export default function ProfileSidebar({
           </div>
 
           {/* Coupons */}
-          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-full text-green-600">
-                <FiGift />
+          <div className="bg-green-50 rounded-lg border border-green-100 overflow-hidden">
+            {/* Header - Clickable untuk expand/collapse */}
+            <div
+              className="flex items-center justify-between p-3 cursor-pointer hover:bg-green-100 transition-colors"
+              onClick={() => setIsCouponExpanded(!isCouponExpanded)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-full text-green-600">
+                  <FiGift />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Active Coupons</p>
+                  <p className="font-bold text-slate-800">
+                    {coupons?.totalCoupons || 0} Coupons
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-slate-500">Active Coupons</p>
-                <p className="font-bold text-slate-800">
-                  {coupons?.totalCoupons || 0} Coupons
-                </p>
-              </div>
+              {/* Chevron Icon */}
+              <svg
+                className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${
+                  isCouponExpanded ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
             </div>
+
+            {/* Expandable Coupon List */}
+            {isCouponExpanded && (
+              <div className="border-t border-green-200 bg-white">
+                {coupons && coupons.coupons && coupons.coupons.length > 0 ? (
+                  <div className="divide-y divide-green-100">
+                    {coupons.coupons.map((coupon, index) => {
+                      const isExpired = isCouponExpired(coupon.expiresAt);
+                      return (
+                        <div
+                          key={coupon.id || index}
+                          className={`p-3 hover:bg-green-50/50 transition-colors ${
+                            isExpired ? "opacity-50" : ""
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            {/* Coupon Code & Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <code className="font-mono font-bold text-sm text-green-700 bg-green-100 px-2 py-0.5 rounded">
+                                  {coupon.code}
+                                </code>
+                                <span className="text-xs font-semibold text-green-600">
+                                  {coupon.percentage}% OFF
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500">
+                                {isExpired ? (
+                                  <span className="text-red-500 font-medium">
+                                    Expired on{" "}
+                                    {formatExpiryDate(coupon.expiresAt)}
+                                  </span>
+                                ) : (
+                                  <>
+                                    Valid until{" "}
+                                    {formatExpiryDate(coupon.expiresAt)}
+                                  </>
+                                )}
+                              </p>
+                            </div>
+
+                            {/* Copy Button */}
+                            {!isExpired && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopyCoupon(coupon.code);
+                                }}
+                                className="p-2 hover:bg-green-100 rounded-lg transition-colors text-green-600 shrink-0"
+                                title="Copy coupon code"
+                              >
+                                <FiCopy size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-sm text-slate-500">
+                    No active coupons available
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Referral Code */}
