@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import useDebounce from "@/hooks/use-debounce";
 
 // --- Types ---
 export interface AttendeeItem {
@@ -114,16 +115,18 @@ const exportToCSV = (data: AttendeeItem[], eventName: string = "Event") => {
 
 export function AttendeeList({ attendees, loading }: AttendeeListProps) {
   // State
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState<string>("");
+  const debouncedSearch = useDebounce<string>(searchInput, 500);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Filter Logic
   const filteredAttendees = useMemo(() => {
     // Jika tidak ada search, kembalikan semua (optimization)
-    if (!search) return attendees;
+    if (!debouncedSearch) return attendees;
 
-    const searchTerm = search.toLowerCase();
+    const searchTerm = debouncedSearch.toLowerCase();
     return attendees.filter((attendee) => {
       const userName = attendee.userName?.toLowerCase() || "";
       const userEmail = attendee.userEmail?.toLowerCase() || "";
@@ -136,7 +139,7 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
         ticketType.includes(searchTerm)
       );
     });
-  }, [attendees, search]);
+  }, [attendees, debouncedSearch]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredAttendees.length / itemsPerPage);
@@ -165,7 +168,7 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
   }, [filteredAttendees]);
 
   const handleSearchChange = (value: string) => {
-    setSearch(value);
+    setSearchInput(value);
     setCurrentPage(1);
   };
 
@@ -208,7 +211,7 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
     </Card>
   );
 
-  if (attendees.length === 0 && !search) {
+  if (attendees.length === 0 && !searchInput) {
     // Empty state UI (tetap sama seperti punyamu)
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg border-dashed border-slate-300 bg-slate-50/50">
@@ -260,7 +263,7 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
                 <Input
                   placeholder="Cari nama, email, atau tiket..."
                   className="pl-9 w-full sm:w-[280px]"
-                  value={search}
+                  value={searchInput}
                   onChange={(e) => handleSearchChange(e.target.value)}
                 />
               </div>
@@ -337,7 +340,7 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
                         <p>
                           Tidak ditemukan peserta dengan kata kunci{" "}
                           <span className="font-medium text-slate-900">
-                            "{search}"
+                            "{searchInput}"
                           </span>
                         </p>
                       </div>

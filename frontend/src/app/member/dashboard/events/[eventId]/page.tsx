@@ -38,6 +38,7 @@ import {
   Tab,
 } from "@/features/dashboard/components/TabNavigation";
 import { AttendeeList } from "@/features/dashboard/components/AttendeeList";
+import useDebounce from "@/hooks/use-debounce";
 
 // Helper Format Rupiah
 const formatRupiah = (number: number) => {
@@ -96,7 +97,8 @@ export default function EventReportPage() {
   const [attendeesLoading, setAttendeesLoading] = useState<boolean>(false);
 
   // filter state
-  const [search, setSearch] = useState<string>("");
+  const [searchInput, setSearchInput] = useState<string>("");
+  const debouncedSearch = useDebounce<string>(searchInput, 500);
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "ALL">(
     "ALL"
   );
@@ -173,7 +175,7 @@ export default function EventReportPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, statusFilter, itemsPerPage]);
+  }, [debouncedSearch, statusFilter, itemsPerPage]);
 
   const handleVerify = async (action: "ACCEPT" | "REJECT") => {
     if (!selectedTrx) return;
@@ -225,7 +227,7 @@ export default function EventReportPage() {
     // Safety check: pastikan nilai string tidak null/undefined
     const userName = t.userName || "";
     const invoiceId = t.invoiceId || "";
-    const searchTerm = search.toLowerCase();
+    const searchTerm = debouncedSearch.toLowerCase();
 
     const matchesSearch =
       userName.toLowerCase().includes(searchTerm) ||
@@ -374,8 +376,8 @@ export default function EventReportPage() {
                   <Input
                     placeholder="Cari nama / ID..."
                     className="pl-9"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                   />
                 </div>
 

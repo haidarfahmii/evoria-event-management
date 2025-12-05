@@ -40,18 +40,30 @@ import {
 
 // Import Service dan Interface
 import { eventService, Event } from "@/features/events/services/event.service";
+import useDebounce from "@/hooks/use-debounce";
+import useUrlState from "@/hooks/useUrlState";
 
 type TabType = "ACTIVE" | "PAST";
 
 export default function ManageEventsPage() {
   const router = useRouter();
+  const { getParam, setParam, setParams } = useUrlState();
+
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [search, setSearch] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<TabType>("ACTIVE");
+
+  // Read from URL
+  const urlSearch = getParam("search", "");
+  const urlTab = getParam("tab", "ACTIVE") as TabType;
+  const urlPage = parseInt(getParam("page", "1"), 10);
+
+  // search state
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const debouncedSearch = useDebounce<string>(searchInput, 500);
 
   // Pagination State
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [activeTab, setActiveTab] = useState<TabType>(urlTab);
+  const [currentPage, setCurrentPage] = useState<number>(urlPage);
   const EVENTS_PER_PAGE = 9; // Maksimal card per halaman
 
   const [qrModalOpen, setQrModalOpen] = useState<boolean>(false);
@@ -77,10 +89,23 @@ export default function ManageEventsPage() {
     fetchEvents();
   }, []);
 
-  // Reset ke halaman 1 setiap kali tab atau search berubah
+  // Sync URL when debounced search changes
   useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, search]);
+    // Only update if debouncedSearch actually changed from URL
+    if (debouncedSearch !== urlSearch) {
+      setParams({
+        search: debouncedSearch,
+        page: "1",
+      });
+    }
+  }, [debouncedSearch]); // Only depend on debouncedSearch
+
+  // Initialize from URL on mount
+  useEffect(() => {
+    setSearchInput(urlSearch);
+    setActiveTab(urlTab);
+    setCurrentPage(urlPage);
+  }, []); // Only on mount
 
   // Handle Delete
   const handleDelete = async (id: string) => {
@@ -116,6 +141,21 @@ export default function ManageEventsPage() {
     }
   };
 
+  // Handler for tab change
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setParams({
+      tab,
+      page: "1", // Reset page when changing tabs
+    });
+  };
+
+  // Handler for page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setParam("page", page.toString());
+  };
+
   // Filter Logic (Safe)
   const eventList = Array.isArray(events) ? events : [];
 
@@ -129,7 +169,7 @@ export default function ManageEventsPage() {
     // Filter by Search
     const matchesSearch = event.name
       .toLowerCase()
-      .includes(search.toLowerCase());
+      .includes(debouncedSearch.toLowerCase());
 
     return matchesTab && matchesSearch;
   });
@@ -183,15 +223,15 @@ export default function ManageEventsPage() {
           <Input
             placeholder="Cari Event Saya..."
             className="pl-10 bg-slate-50 border-slate-200 focus-visible:ring-blue-500"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
 
         {/* Tabs */}
         <div className="flex border-b border-slate-200">
           <button
-            onClick={() => setActiveTab("ACTIVE")}
+            onClick={() => handleTabChange("ACTIVE")}
             className={`px-6 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === "ACTIVE"
                 ? "border-blue-600 text-blue-600"
@@ -201,7 +241,7 @@ export default function ManageEventsPage() {
             EVENT AKTIF
           </button>
           <button
-            onClick={() => setActiveTab("PAST")}
+            onClick={() => handleTabChange("PAST")}
             className={`px-6 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === "PAST"
                 ? "border-blue-600 text-blue-600"
@@ -216,7 +256,7 @@ export default function ManageEventsPage() {
       {/* Event Grid (Menampilkan Data yang sudah dipaginasi) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Create New Card (Hanya tampil di halaman 1 tab ACTIVE dan tidak sedang search) */}
-        {activeTab === "ACTIVE" && !search && currentPage === 1 && (
+        {activeTab === "ACTIVE" && !debouncedSearch && currentPage === 1 && (
           <Link href="/create-event" className="group h-full">
             <div className="h-full min-h-[380px] border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center bg-slate-50/50 hover:bg-blue-50/30 hover:border-blue-400 transition-all cursor-pointer gap-4">
               <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -416,21 +456,23 @@ export default function ManageEventsPage() {
       </div>
 
       {/* Empty State */}
-      {filteredEvents.length === 0 && search && (
+      {filteredEvents.length === 0 && debouncedSearch && (
         <div className="text-center py-20">
           <p className="text-slate-500">
-            Tidak ada event yang cocok dengan pencarian "{search}".
+            Tidak ada event yang cocok dengan pencarian "{debouncedSearch}".
           </p>
         </div>
       )}
 
-      {filteredEvents.length === 0 && !search && activeTab === "PAST" && (
-        <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-xl">
-          <p className="text-slate-500">
-            Belum ada riwayat event yang berlalu.
-          </p>
-        </div>
-      )}
+      {filteredEvents.length === 0 &&
+        !debouncedSearch &&
+        activeTab === "PAST" && (
+          <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-xl">
+            <p className="text-slate-500">
+              Belum ada riwayat event yang berlalu.
+            </p>
+          </div>
+        )}
 
       {/* Pagination Controls */}
       {filteredEvents.length > EVENTS_PER_PAGE && (
@@ -438,7 +480,7 @@ export default function ManageEventsPage() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
             disabled={currentPage === 1}
             className="h-10 w-10 rounded-full"
           >
@@ -453,7 +495,7 @@ export default function ManageEventsPage() {
             variant="outline"
             size="icon"
             onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              handlePageChange(Math.min(currentPage + 1, totalPages))
             }
             disabled={currentPage === totalPages}
             className="h-10 w-10 rounded-full"
