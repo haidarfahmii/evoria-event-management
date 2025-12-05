@@ -20,12 +20,16 @@ import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { Role } from "@/@types";
 import { useState } from "react";
+import { useUserPoints } from "@/hooks/useUserPoints";
+import PointsBadge from "./PointsBadge";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
+
+  const { points, loading: pointsLoading } = useUserPoints();
 
   const user = session?.user;
   const isLoggedIn = status === "authenticated";
@@ -140,6 +144,14 @@ export default function Navbar() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 hover:bg-slate-800 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-slate-700"
                 >
+                  {/* ADD: Points Badge (BEFORE user menu) */}
+                  <div className="hidden lg:block">
+                    <PointsBadge
+                      points={points}
+                      loading={pointsLoading}
+                      variant="navbar"
+                    />
+                  </div>
                   {/* <div className="hidden lg:flex flex-col items-end mr-1">
                     <span className="text-xs font-semibold text-slate-200 leading-none">
                       {user?.name || "Guest"}

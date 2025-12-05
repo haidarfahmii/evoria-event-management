@@ -17,6 +17,8 @@ import { useSession, signOut } from "next-auth/react";
 import { Role } from "@/@types";
 import { useBreadcrumb } from "@/context/BreadcrumbContext";
 import { SIDEBAR_ITEMS, SidebarGroup } from "@/config/navigation";
+import { useUserPoints } from "@/hooks/useUserPoints";
+import PointsBadge from "./PointsBadge";
 
 // Mapping path URL ke nama yang lebih user-friendly (Bahasa Indonesia)
 const pathLabels: Record<string, string> = {
@@ -78,6 +80,8 @@ export default function DashboardHeader() {
       }),
     ];
   };
+
+  const { points, loading: pointsLoading } = useUserPoints();
 
   const breadcrumbs = generateBreadcrumbs();
   const user = session?.user;
@@ -185,7 +189,15 @@ export default function DashboardHeader() {
         <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
         {/* User Menu Dropdown */}
-        <div className="relative">
+        <div className="relative flex items-center gap-3">
+          <div className="hidden md:block">
+            <PointsBadge
+              points={points}
+              loading={pointsLoading}
+              variant="dashboard"
+            />
+          </div>
+
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className="flex items-center gap-2 hover:bg-slate-50 p-1 pl-2 rounded-full transition-all border border-transparent hover:border-slate-200"
