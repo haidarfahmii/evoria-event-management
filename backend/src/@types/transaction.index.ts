@@ -72,6 +72,7 @@ export interface TransactionSummary {
   eventId: string;
   eventName: string;
   qty: number;
+  ticketType?: { id: string; name: string; price: number } | null;
   totalPrice: number;
   finalPrice: number;
   pointsUsed: number;
