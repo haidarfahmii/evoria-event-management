@@ -17,6 +17,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  TicketPercent
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -308,6 +309,13 @@ export default function ManageEventsPage() {
                     }
                   >
                     <Edit className="mr-2 h-4 w-4" /> Edit Event
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      router.push(`/member/events/promotion/${event.id}`)
+                    }
+                  >
+                    <TicketPercent className="mr-2 h-4 w-4" /> Edit Promotion
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
