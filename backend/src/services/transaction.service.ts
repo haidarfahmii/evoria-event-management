@@ -155,7 +155,7 @@ export const transactionService: ITransactionService = {
       if (existingActiveTicket) {
         // Pengguna sudah memiliki tiket (lunas atau sedang dalam proses pembayaran/konfirmasi)
         throw AppError(
-          "Anda sudah memiliki tiket aktif atau sedang menunggu pembayaran/konfirmasi untuk acara ini.",409
+          "You already bought a ticket for this event.",409
         );
       }
     }
@@ -195,7 +195,7 @@ export const transactionService: ITransactionService = {
           currentPrice -= promotion.value;
         }
 
-        if (promotion.maxUsage! < 0) {
+        if (promotion.maxUsage! <= 0) {
           throw AppError("Promotion maxUsage is reached!", 400);
         }
 
