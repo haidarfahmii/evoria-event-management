@@ -73,6 +73,10 @@ export default function PromotionWidget({
                 throw new Error("Kode promosi tidak valid untuk event ini");
             }
 
+            if (foundPromo.maxUsage <= 0) {
+                throw new Error("Kode promosi habis terpakai")
+            }
+
             // 5. Validasi: Cek Tanggal Berlaku (Start & End Date)
             const now = new Date();
             const startDate = new Date(foundPromo.startDate);
