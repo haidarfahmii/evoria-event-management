@@ -20,7 +20,7 @@ import {
   QrCode,
   ChevronLeft,
   ChevronRight,
-  TicketPercent
+  TicketPercent,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { Input } from "@/components/ui/input";
@@ -392,7 +392,7 @@ export default function ManageEventsPage() {
                     <Edit className="mr-2 h-4 w-4" /> Edit Event
                   </DropdownMenuItem>
 
-                  {/* Delete Event */}
+                  {/* Halaman Promotion */}
                   <DropdownMenuItem
                     onClick={() =>
                       router.push(`/member/events/promotion/${event.id}`)
@@ -400,6 +400,8 @@ export default function ManageEventsPage() {
                   >
                     <TicketPercent className="mr-2 h-4 w-4" /> Edit Promotion
                   </DropdownMenuItem>
+
+                  {/* Delete Event */}
                   <DropdownMenuItem
                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
                     onClick={() => handleDelete(event.id)}

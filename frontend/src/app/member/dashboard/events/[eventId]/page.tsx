@@ -593,6 +593,7 @@ export default function EventReportPage() {
                       alt="Bukti Transfer"
                       fill
                       className="object-contain"
+                      unoptimized
                     />
                   ) : (
                     <div className="text-slate-400 flex flex-col items-center">

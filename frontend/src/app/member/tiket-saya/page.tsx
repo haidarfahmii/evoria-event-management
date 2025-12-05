@@ -49,7 +49,7 @@ interface User {
 interface Event {
   id: string;
   name: string;
-  image?: string;
+  imageUrl?: string;
   venue?: string;
   startDate?: string;
 }
@@ -211,9 +211,13 @@ const TicketDetailModal = ({
 
   if (!transaction) return null;
 
-  const displayDate = format(new Date(transaction.createdAt), "dd MMMM yyyy", {
-    locale: idLocale,
-  });
+  const displayDate = format(
+    new Date(transaction.event.startDate as string),
+    "dd MMMM yyyy",
+    {
+      locale: idLocale,
+    }
+  );
   const displayTime =
     format(new Date(transaction.createdAt), "HH:mm", { locale: idLocale }) +
     " WIB";
@@ -312,7 +316,7 @@ const TicketDetailModal = ({
             <div className="grid grid-cols-2 gap-y-6 gap-x-4">
               <div>
                 <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
-                  Tanggal Transaksi
+                  Tanggal Event
                 </p>
                 <div className="flex items-center gap-2 text-gray-800 font-semibold">
                   <Calendar size={18} className="text-blue-600" /> {displayDate}
@@ -505,7 +509,7 @@ const TicketCard = ({
   onClick: () => void;
 }) => {
   const imageUrl =
-    transaction.event.image ||
+    transaction.event.imageUrl ||
     "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=600&auto=format&fit=crop";
   const displayDate = format(new Date(transaction.createdAt), "dd MMM yyyy", {
     locale: idLocale,

@@ -147,19 +147,20 @@ export const transactionService: ITransactionService = {
             {
               status: TransactionStatus.WAITING_CONFIRMATION,
               organizerResponseDeadline: { gt: new Date() },
-            }
-          ]
+            },
+          ],
         },
       });
 
       if (existingActiveTicket) {
         // Pengguna sudah memiliki tiket (lunas atau sedang dalam proses pembayaran/konfirmasi)
         throw AppError(
-          "Anda sudah memiliki tiket aktif atau sedang menunggu pembayaran/konfirmasi untuk acara ini.",409
+          "Anda sudah memiliki tiket aktif atau sedang menunggu pembayaran/konfirmasi untuk acara ini.",
+          409
         );
       }
     }
-    
+
     const newTransaction = await prisma.$transaction(async (tx) => {
       // Check Ticket & Seats
       const ticket = await tx.ticketType.findUnique({
@@ -390,7 +391,15 @@ export const transactionService: ITransactionService = {
       where: { userId },
       include: {
         user: { select: { id: true, name: true, email: true } },
-        event: { select: { id: true, name: true } },
+        event: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            venue: true,
+            startDate: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
