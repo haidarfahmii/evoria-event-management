@@ -7,6 +7,7 @@ import PointWidget from "./PointWidget";
 import { useRouter } from "next/navigation";
 import axiosInstance from "@/utils/axiosInstance";
 import { ImSpinner8 } from "react-icons/im";
+import { toast } from "react-toastify";
 
 interface TicketType {
     id: string;
@@ -147,18 +148,18 @@ export default function TicketingSection({ ticketTypes, eventId }: TicketingSect
                 payload.promotionId = appliedPromoId;
             }
 
-            // console.log("Sending payload:", payload);
 
             // // 1. POST ke API
             const response = await axiosInstance.post(`/transactions`, payload);
 
-            alert('Successfully Buy Ticket')
+            toast.success('Successfully buy ticket');
+            router.push('/member/tiket-saya')
         } catch (error: any) {
             console.error("Checkout Failed:", error);
 
             // Tampilkan error (Bisa ganti pakai Toast / Alert)
             const errorMsg = error.response?.data?.message || "Terjadi kesalahan saat checkout.";
-            alert(errorMsg);
+            toast.error(errorMsg)
         } finally {
             setIsSubmitting(false);
         }
