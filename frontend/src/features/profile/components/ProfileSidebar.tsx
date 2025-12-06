@@ -6,6 +6,7 @@ import { useState } from "react";
 import { FiCamera, FiGift, FiCreditCard, FiCopy } from "react-icons/fi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProfileData, PointData, CouponData } from "@/@types";
+import { formatDate, isExpired as isCouponExpired } from "@/utils/formatters";
 
 interface ProfileSidebarProps {
   user: ProfileData | null;
@@ -35,22 +36,6 @@ export default function ProfileSidebar({
   const handleCopyCoupon = (code: string) => {
     navigator.clipboard.writeText(code);
     toast.success(`Coupon code "${code}" copied!`);
-  };
-
-  // handler format tanggal kadaluwarsa
-  const formatExpiryDate = (dateString: string) => {
-    const date = new Date(dateString);
-
-    return date.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  // handler cek jika coupon sudah expire
-  const isCouponExpired = (dateString: string) => {
-    return new Date(dateString) < new Date();
   };
 
   return (
@@ -185,13 +170,11 @@ export default function ProfileSidebar({
                               <p className="text-[10px] text-slate-500">
                                 {isExpired ? (
                                   <span className="text-red-500 font-medium">
-                                    Expired on{" "}
-                                    {formatExpiryDate(coupon.expiresAt)}
+                                    Expired on {formatDate(coupon.expiresAt)}
                                   </span>
                                 ) : (
                                   <>
-                                    Valid until{" "}
-                                    {formatExpiryDate(coupon.expiresAt)}
+                                    Valid until {formatDate(coupon.expiresAt)}
                                   </>
                                 )}
                               </p>

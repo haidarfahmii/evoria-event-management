@@ -11,10 +11,6 @@ import {
   AlertCircle,
   Banknote,
   Ticket,
-  ChevronsLeft,
-  ChevronRight,
-  ChevronsRight,
-  ChevronLeft,
   FileText,
   Users,
 } from "lucide-react";
@@ -37,48 +33,11 @@ import {
   TabId,
   Tab,
 } from "@/features/dashboard/components/TabNavigation";
+import { formatRupiah } from "@/utils/formatters";
+import { StatusBadge } from "@/components/ui/shared/statusBadge";
+import { Pagination } from "@/components/ui/shared/pagination";
 import { AttendeeList } from "@/features/dashboard/components/AttendeeList";
 import useDebounce from "@/hooks/use-debounce";
-
-// Helper Format Rupiah
-const formatRupiah = (number: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(number);
-};
-
-// Helper Badge Status
-const StatusBadge = ({ status }: { status: TransactionStatus }) => {
-  const styles: Record<TransactionStatus, string> = {
-    [TransactionStatus.WAITING_PAYMENT]:
-      "bg-orange-100 text-orange-700 border-orange-200",
-    [TransactionStatus.WAITING_CONFIRMATION]:
-      "bg-blue-100 text-blue-700 border-blue-200",
-    [TransactionStatus.DONE]: "bg-green-100 text-green-700 border-green-200",
-    [TransactionStatus.REJECTED]: "bg-red-100 text-red-700 border-red-200",
-    [TransactionStatus.EXPIRED]: "bg-gray-100 text-gray-500 border-gray-200",
-    [TransactionStatus.CANCELLED]: "bg-gray-100 text-gray-500 border-gray-200",
-  };
-
-  const labels: Record<TransactionStatus, string> = {
-    [TransactionStatus.WAITING_PAYMENT]: "Menunggu Bayar",
-    [TransactionStatus.WAITING_CONFIRMATION]: "Perlu Verifikasi",
-    [TransactionStatus.DONE]: "Selesai",
-    [TransactionStatus.REJECTED]: "Ditolak",
-    [TransactionStatus.EXPIRED]: "Kadaluarsa",
-    [TransactionStatus.CANCELLED]: "Dibatalkan",
-  };
-
-  return (
-    <span
-      className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${styles[status]}`}
-    >
-      {labels[status]}
-    </span>
-  );
-};
 
 export default function EventReportPage() {
   const router = useRouter();
@@ -400,6 +359,7 @@ export default function EventReportPage() {
                   <option value={TransactionStatus.CANCELLED}>
                     Dibatalkan
                   </option>
+                  <option value={TransactionStatus.EXPIRED}>Kadaluarsa</option>
                 </select>
               </div>
 
@@ -491,76 +451,15 @@ export default function EventReportPage() {
               </div>
 
               {/* Pagination */}
-              {filteredData.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <span>Tampilkan</span>
-                    <select
-                      className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs focus:ring-1 focus:ring-ring"
-                      value={itemsPerPage}
-                      onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                    >
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                    </select>
-                    <span>data</span>
-                    <span className="hidden sm:inline-block ml-2 text-slate-400">
-                      ({startIndex + 1} -{" "}
-                      {Math.min(endIndex, filteredData.length)} dari{" "}
-                      {filteredData.length})
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setCurrentPage(1)}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronsLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-
-                    <span className="text-sm font-medium px-2 min-w-20 text-center">
-                      Hal {currentPage} / {totalPages}
-                    </span>
-
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setCurrentPage(totalPages)}
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronsRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+              {paginatedData.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredData.length}
+                  totalPages={totalPages}
+                  onPageChange={(page) => setCurrentPage(page)}
+                  onItemsPerPageChange={(items) => setItemsPerPage(items)}
+                />
               )}
             </div>
           ) : (

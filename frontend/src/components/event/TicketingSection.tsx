@@ -7,6 +7,7 @@ import PointWidget from "./PointWidget";
 import { useRouter } from "next/navigation";
 import axiosInstance from "@/utils/axiosInstance";
 import { ImSpinner8 } from "react-icons/im";
+import { formatRupiah } from "@/utils/formatters";
 
 interface TicketType {
   id: string;
@@ -252,13 +253,7 @@ export default function TicketingSection({
                     )}
                   </div>
                   <div className="font-bold text-gray-900">
-                    {ticket.price === 0
-                      ? "FREE"
-                      : new Intl.NumberFormat("id-ID", {
-                          style: "currency",
-                          currency: "IDR",
-                          maximumFractionDigits: 0,
-                        }).format(ticket.price)}
+                    {ticket.price === 0 ? "FREE" : formatRupiah(ticket.price)}
                   </div>
 
                   {/* Active Indicator Dot */}
@@ -356,13 +351,7 @@ export default function TicketingSection({
               {(discount > 0 || appliedPromotion || pointUsed > 0) && (
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Subtotal ({quantity}x tiket)</span>
-                  <span>
-                    {new Intl.NumberFormat("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      maximumFractionDigits: 0,
-                    }).format(basePrice)}
-                  </span>
+                  <span>{formatRupiah(basePrice)}</span>
                 </div>
               )}
 
@@ -370,14 +359,7 @@ export default function TicketingSection({
               {appliedPromotion && (
                 <div className="flex justify-between text-sm text-purple-600 font-medium">
                   <span>Diskon Promo ({appliedPromotion.promotionCode})</span>
-                  <span>
-                    -{" "}
-                    {new Intl.NumberFormat("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      maximumFractionDigits: 0,
-                    }).format(appliedPromotion.discountAmount)}
-                  </span>
+                  <span>- {formatRupiah(appliedPromotion.discountAmount)}</span>
                 </div>
               )}
 
@@ -385,14 +367,7 @@ export default function TicketingSection({
               {discount > 0 && (
                 <div className="flex justify-between text-sm text-green-600 font-medium">
                   <span>Diskon Kupon ({appliedCouponCode})</span>
-                  <span>
-                    -{" "}
-                    {new Intl.NumberFormat("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      maximumFractionDigits: 0,
-                    }).format(discount)}
-                  </span>
+                  <span>- {formatRupiah(discount)}</span>
                 </div>
               )}
 
@@ -400,14 +375,7 @@ export default function TicketingSection({
               {pointUsed > 0 && (
                 <div className="flex justify-between text-sm text-amber-600 font-medium">
                   <span>Poin Digunakan</span>
-                  <span>
-                    -{" "}
-                    {new Intl.NumberFormat("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      maximumFractionDigits: 0,
-                    }).format(pointUsed)}
-                  </span>
+                  <span>- {formatRupiah(pointUsed)}</span>
                 </div>
               )}
 
@@ -420,11 +388,7 @@ export default function TicketingSection({
                   <span className="block text-2xl font-extrabold text-blue-600 leading-none">
                     {totalPrice === 0 && selectedTicket.price === 0
                       ? "FREE"
-                      : new Intl.NumberFormat("id-ID", {
-                          style: "currency",
-                          currency: "IDR",
-                          maximumFractionDigits: 0,
-                        }).format(totalPrice)}
+                      : formatRupiah(totalPrice)}
                   </span>
                   <span className="text-[10px] text-gray-400">
                     Includes taxes & fees

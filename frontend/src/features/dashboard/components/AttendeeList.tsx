@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatRupiah, formatDate } from "@/utils/formatters";
+import { Pagination } from "@/components/ui/shared/pagination";
 import useDebounce from "@/hooks/use-debounce";
 
 // --- Types ---
@@ -32,29 +34,6 @@ interface AttendeeListProps {
 }
 
 // --- Helper Functions (Moved outside component) ---
-
-const formatRupiah = (number: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(number);
-};
-
-const formatDate = (dateString: string) => {
-  // Validasi input agar tidak error invalid date
-  if (!dateString) return "-";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "-";
-
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
 
 const exportToCSV = (data: AttendeeItem[], eventName: string = "Event") => {
   const headers = [
@@ -283,7 +262,7 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
         </CardHeader>
 
         <CardContent>
-          <div className="overflow-x-auto rounded-md border border-slate-200">
+          <div className="overflow-x-auto rounded-md border border-slate-200 mb-4">
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
                 <tr>
@@ -353,77 +332,15 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
 
           {/* Pagination Controls */}
           {filteredAttendees.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <span className="hidden sm:inline">Tampilkan</span>
-                <select
-                  className="h-8 w-16 rounded-md border border-slate-300 bg-white px-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                </select>
-                <span className="text-slate-600 text-xs sm:text-sm">
-                  {startIndex + 1}-
-                  {Math.min(endIndex, filteredAttendees.length)} dari{" "}
-                  {filteredAttendees.length}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <div className="text-sm font-medium px-3 min-w-20 text-center">
-                  {currentPage} / {totalPages || 1}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages || totalPages === 0}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages || totalPages === 0}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              className="mt-10"
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredAttendees.length}
+              totalPages={totalPages}
+              onPageChange={(page) => setCurrentPage(page)}
+              onItemsPerPageChange={(items) => setItemsPerPage(items)}
+            />
           )}
         </CardContent>
       </Card>

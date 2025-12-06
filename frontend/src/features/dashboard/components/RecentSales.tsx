@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axiosInstance from "@/utils/axiosInstance";
 import { Loader2 } from "lucide-react";
 import { TransactionStatus } from "@/@types";
+import { formatRupiah } from "@/utils/formatters";
 
 // Avatar Component
 const AvatarCircle = ({
@@ -21,15 +22,6 @@ const AvatarCircle = ({
     )}
   </div>
 );
-
-// Helper Function: Format Rupiah
-const formatRupiah = (amount: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
 
 // Helper Function: Get Status Config (label, color, badge)
 const getStatusConfig = (status: TransactionStatus) => {

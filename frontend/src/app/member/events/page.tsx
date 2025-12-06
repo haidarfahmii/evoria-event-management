@@ -40,6 +40,8 @@ import {
 
 // Import Service dan Interface
 import { eventService, Event } from "@/features/events/services/event.service";
+import { formatRupiah } from "@/utils/formatters";
+import { Pagination } from "@/components/ui/shared/pagination";
 import useDebounce from "@/hooks/use-debounce";
 import useUrlState from "@/hooks/useUrlState";
 
@@ -179,15 +181,6 @@ export default function ManageEventsPage() {
   const startIndex = (currentPage - 1) * EVENTS_PER_PAGE;
   const endIndex = startIndex + EVENTS_PER_PAGE;
   const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
-
-  // Helper Format Rupiah
-  const formatRupiah = (number: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(number);
-  };
 
   if (loading) {
     return (
@@ -476,33 +469,11 @@ export default function ManageEventsPage() {
 
       {/* Pagination Controls */}
       {filteredEvents.length > EVENTS_PER_PAGE && (
-        <div className="flex items-center justify-center gap-4 pt-8">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-            disabled={currentPage === 1}
-            className="h-10 w-10 rounded-full"
-          >
-            <ChevronLeft size={20} />
-          </Button>
-
-          <span className="text-sm font-medium text-slate-600">
-            Halaman {currentPage} dari {totalPages}
-          </span>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() =>
-              handlePageChange(Math.min(currentPage + 1, totalPages))
-            }
-            disabled={currentPage === totalPages}
-            className="h-10 w-10 rounded-full"
-          >
-            <ChevronRight size={20} />
-          </Button>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       )}
 
       {/* QR Code Modal */}

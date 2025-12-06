@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { formatRupiah } from "@/utils/formatters";
+import { StatusBadge } from "@/components/ui/shared/statusBadge";
 import { id as idLocale } from "date-fns/locale";
 import axiosInstance from "@/utils/axiosInstance";
 
@@ -96,14 +98,6 @@ interface ApiResponse {
  * ==========================================
  */
 
-const formatRupiah = (amount: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
-
 // --- COMPONENT: COUNTDOWN TIMER ---
 const PaymentCountdown = ({ expiresAt }: { expiresAt: string | null }) => {
   const [timeLeft, setTimeLeft] = useState("");
@@ -157,34 +151,6 @@ const PaymentCountdown = ({ expiresAt }: { expiresAt: string | null }) => {
         {timeLeft || "-- : -- : --"}
       </div>
     </div>
-  );
-};
-
-const Badge = ({ status }: { status: TransactionStatus }) => {
-  const styles: Record<TransactionStatus, string> = {
-    WAITING_PAYMENT: "bg-orange-50 text-orange-600 border-orange-200",
-    WAITING_CONFIRMATION: "bg-blue-50 text-blue-600 border-blue-200",
-    DONE: "bg-green-100 text-green-700 border-green-200",
-    REJECTED: "bg-red-50 text-red-600 border-red-200",
-    CANCELLED: "bg-gray-100 text-gray-600 border-gray-200",
-    EXPIRED: "bg-slate-100 text-slate-500 border-slate-200",
-  };
-
-  const labels: Record<TransactionStatus, string> = {
-    WAITING_PAYMENT: "Menunggu Pembayaran",
-    WAITING_CONFIRMATION: "Menunggu Konfirmasi",
-    DONE: "Selesai (E-Voucher)",
-    REJECTED: "Ditolak",
-    CANCELLED: "Dibatalkan",
-    EXPIRED: "Kadaluarsa",
-  };
-
-  return (
-    <span
-      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[status]}`}
-    >
-      {labels[status]}
-    </span>
   );
 };
 
@@ -389,7 +355,7 @@ const TicketDetailModal = ({
           {transaction.status === TransactionStatus.WAITING_PAYMENT && (
             <div className="flex flex-col h-full gap-4">
               <div className="mb-2">
-                <Badge status={transaction.status} />
+                <StatusBadge status={transaction.status} />
               </div>
 
               {/* Countdown Component */}
@@ -471,12 +437,14 @@ const TicketDetailModal = ({
               <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-600">
                 <CheckCircle size={32} />
               </div>
-              <h3 className="font-bold text-gray-800">Bukti Diterima</h3>
+              <h3 className="font-bold text-gray-800">
+                Bukti Berhasil Diupload
+              </h3>
               <p className="text-xs text-gray-500 mt-2 mb-4">
                 Kami sedang memverifikasi pembayaran Anda. Mohon tunggu maksimal
                 3x24 jam.
               </p>
-              <Badge status={transaction.status} />
+              <StatusBadge status={transaction.status} />
             </div>
           )}
 
@@ -490,7 +458,7 @@ const TicketDetailModal = ({
               </div>
               <h3 className="font-bold text-gray-700">Transaksi Tidak Aktif</h3>
               <div className="mt-4">
-                <Badge status={transaction.status} />
+                <StatusBadge status={transaction.status} />
               </div>
             </div>
           )}
@@ -530,7 +498,7 @@ const TicketCard = ({
             className="object-cover w-full h-full"
           />
           <div className="absolute top-2 left-2 md:hidden">
-            <Badge status={transaction.status} />
+            <StatusBadge status={transaction.status} />
           </div>
         </div>
 
@@ -539,7 +507,7 @@ const TicketCard = ({
           <div className="flex justify-between items-start mb-2">
             <div>
               <div className="hidden md:block mb-2">
-                <Badge status={transaction.status} />
+                <StatusBadge status={transaction.status} />
               </div>
               <h3 className="font-bold text-gray-900 text-lg leading-tight group-hover:text-blue-600 transition-colors mb-2 line-clamp-1">
                 {transaction.eventName}
