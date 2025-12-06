@@ -148,18 +148,18 @@ export const transactionController = {
       value: Number(value),
       maxUsage: Number(maxUsage),
       startDate,
-      endDate
-    }
+      endDate,
+    };
 
-    const promotion = await transactionService.createPromotion(data)
+    const promotion = await transactionService.createPromotion(data);
 
     res.status(201).json({
       success: true,
       message: "Event Promotion created successfully",
       data: {
-        promotion
-      }
-    })
+        promotion,
+      },
+    });
   },
 
   /**
@@ -168,15 +168,15 @@ export const transactionController = {
   async getPromotionByEventId(req: Request, res: Response, next: NextFunction) {
     const { eventId } = req.params;
 
-    const promotion = await transactionService.getPromotionByEventId(eventId)
+    const promotion = await transactionService.getPromotionByEventId(eventId);
 
     res.status(200).json({
       success: true,
       message: "Event Promotion retrieved by Event ID successfully",
       data: {
-        promotion
-      }
-    })
+        promotion,
+      },
+    });
   },
 
   /**
@@ -185,43 +185,48 @@ export const transactionController = {
   async getPromotionbyId(req: Request, res: Response, next: NextFunction) {
     const { id } = req.params;
 
-    const promotion = await transactionService.getPromotionById(id)
+    const promotion = await transactionService.getPromotionById(id);
 
     res.status(200).json({
       success: true,
       message: "Event Promotion retrieved by Promotion ID successfully",
       data: {
-        promotion
-      }
-    })
+        promotion,
+      },
+    });
   },
 
-  async deletePromotionByEventId(req: Request, res: Response, next: NextFunction) {
+  async deletePromotionByEventId(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     const { eventId } = req.params;
 
-    const promotion = await transactionService.deletePromotionByEventId(eventId)
+    const promotion = await transactionService.deletePromotionByEventId(
+      eventId
+    );
 
     res.status(200).json({
       success: true,
       message: "Event Promotion retrieved by Event ID successfully",
       data: {
-        promotion
-      }
-    })
+        promotion,
+      },
+    });
   },
 
   async deletePromotionById(req: Request, res: Response, next: NextFunction) {
     const { id } = req.params;
 
-    const promotion = await transactionService.deletePromotionById(id)
+    const promotion = await transactionService.deletePromotionById(id);
 
     res.status(200).json({
       success: true,
       message: "Delete Promotion by Promotion ID successfully",
       data: {
-        promotion
-      }
-    })
-  }
+        promotion,
+      },
+    });
+  },
 };
-

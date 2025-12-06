@@ -1,8 +1,8 @@
 "use client";
 import { MdAdd, MdRemove, MdConfirmationNumber } from "react-icons/md";
 import { useState, useEffect } from "react";
-import CouponWidget, { CouponData } from "./CouponWidget";
-import PromotionWidget from "./PromotionWidget";
+import CouponWidget, { CouponData, CouponResult } from "./CouponWidget";
+import PromotionWidget, { PromotionResult } from "./PromotionWidget";
 import PointWidget from "./PointWidget";
 import { useRouter } from "next/navigation";
 import axiosInstance from "@/utils/axiosInstance";
@@ -48,10 +48,8 @@ export default function TicketingSection({
   const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>("");
   const [appliedCouponId, setAppliedCouponId] = useState<string>("");
 
-  // State for Promotion
-  const [promoDiscount, setPromoDiscount] = useState<number>(0);
-  const [appliedPromoId, setAppliedPromoId] = useState<string | null>("");
-  const [appliedPromoCode, setAppliedPromoCode] = useState<string>("");
+  const [appliedPromotion, setAppliedPromotion] =
+    useState<PromotionResult | null>(null);
 
   // State for point
   const [pointUsed, setPointUsed] = useState<number>(0);
@@ -63,13 +61,35 @@ export default function TicketingSection({
   // Safety check
   if (!selectedTicket) return <div>No tickets available</div>;
 
-  const subTotal = selectedTicket.price * quantity;
-  // Pastikan total tidak minus
-  const totalPrice = Math.max(
-    0,
-    subTotal - discount - promoDiscount - pointUsed
-  );
+  const basePrice = selectedTicket.price * quantity;
+  let currentPrice = basePrice;
+
+  if (appliedPromotion) {
+    currentPrice -= appliedPromotion.discountAmount;
+  }
+
+  // Apply coupon discount
+  if (discount > 0) {
+    currentPrice -= discount;
+  }
+
+  // Apply points
+  if (pointUsed > 0) {
+    currentPrice -= pointUsed;
+  }
+
+  // Final price tidak boleh negatif
+  const totalPrice = Math.max(0, currentPrice);
   const isSoldOut = selectedTicket.seats === 0;
+
+  // Auto-remove promotion saat qty berubah
+  // Ini mencegah bug: diskon tetap sama saat qty diubah
+  useEffect(() => {
+    if (appliedPromotion) {
+      console.log("🔄 Qty changed in parent, removing promotion");
+      handleRemovePromotion();
+    }
+  }, [quantity]); // Dependency: quantity
 
   // Handlers
   const handleQuantityChange = (type: "increment" | "decrement") => {
@@ -86,14 +106,12 @@ export default function TicketingSection({
     // Optional: Reset coupon when ticket type changes if rules apply
     handleRemoveCoupon();
     handleRemovePromotion();
+    setPointUsed(0);
   };
 
-  // --- NEW: Coupon Handlers ---
-  const handleApplyCoupon = (data: {
-    couponId: string;
-    couponCode: string;
-    discountAmount: number;
-  }) => {
+  // --- Coupon Handlers ---
+  const handleApplyCoupon = (data: CouponResult) => {
+    console.log("✅ Coupon applied in parent:", data);
     // 1. Set Discount dengan NOMINAL (Rupiah), bukan percentage lagi
     // Karena Widget sudah menghitungnya menjadi rupiah di 'discountAmount'
     setDiscount(data.discountAmount);
@@ -108,26 +126,18 @@ export default function TicketingSection({
   const handleRemoveCoupon = () => {
     setDiscount(0);
     setAppliedCouponCode(null);
+    setAppliedCouponId("");
   };
 
-  // Promotion Handler
-  const handleApplyPromotion = (result: {
-    promotionId: string;
-    discountAmount: number;
-    promotionCode: string;
-  }) => {
-    // Logic: Biasanya Promo dan Kupon tidak bisa digabung (opsional)
-    // Jika tidak boleh digabung, reset kupon saat promo dipakai
-    // handleRemoveCoupon();
-
-    setPromoDiscount(result.discountAmount);
-    setAppliedPromoId(result.promotionId);
-    setAppliedPromoCode(result.promotionCode);
+  // Promotion Handlers
+  const handleApplyPromotion = (result: PromotionResult) => {
+    console.log("✅ Promotion applied in parent:", result);
+    setAppliedPromotion(result);
   };
 
   const handleRemovePromotion = () => {
-    setPromoDiscount(0);
-    setAppliedPromoId(null);
+    console.log("🗑️ Promotion removed in parent");
+    setAppliedPromotion(null);
   };
 
   // Handle Point
@@ -157,8 +167,8 @@ export default function TicketingSection({
       }
 
       // Sama juga untuk promotionId
-      if (appliedPromoId) {
-        payload.promotionId = appliedPromoId;
+      if (appliedPromotion?.promotionId) {
+        payload.promotionId = appliedPromotion.promotionId;
       }
 
       // console.log("Sending payload:", payload);
@@ -304,52 +314,77 @@ export default function TicketingSection({
           {/* Divider */}
           <hr className="border-dashed border-gray-200" />
 
-          {/* --- NEW: 3. Coupon & Promo Widget Section --- */}
+          {/* --- 3. Coupon & Promo Widget Section --- */}
 
           {selectedTicket.price > 0 && !isSoldOut && (
             <>
+              {/* Coupon Widget */}
               <CouponWidget
                 key={`coupon-${selectedTicketId}`}
-                originalPrice={subTotal}
+                originalPrice={selectedTicket.price} // Pass price per ticket (bukan basePrice)
+                qty={quantity}
                 onApplyCoupon={handleApplyCoupon}
                 onRemoveCoupon={handleRemoveCoupon}
               />
+
               <hr className="border-dashed border-gray-200" />
+
+              {/* Promotion Widget - Updated dengan prop qty */}
               <PromotionWidget
-                key={`promo-${selectedTicketId}`}
+                key={`promo-${selectedTicketId}-${quantity}`} // Key berubah saat qty berubah untuk force re-render
                 eventId={eventId}
-                originalPrice={subTotal}
+                originalPrice={selectedTicket.price} // Pass price per ticket (bukan basePrice)
+                qty={quantity} // Pass qty untuk perhitungan di widget
                 onApplyPromotion={handleApplyPromotion}
                 onRemovePromotion={handleRemovePromotion}
               />
+
+              <hr className="border-dashed border-gray-200" />
+
+              {/* Point Widget */}
               <PointWidget
-                originalPrice={subTotal - discount - promoDiscount} // Pass sisa tagihan agar tidak minus
+                originalPrice={Math.max(0, currentPrice)} // Pass sisa tagihan setelah promo & coupon
                 onApplyPoints={handleApplyPoints}
               />
             </>
           )}
 
-          {/* 4. Total & Action */}
+          {/* 4. Price Summary & Checkout */}
           <div className="space-y-4">
-            <div className="space-y-1">
-              {/* Menampilkan Subtotal jika ada diskon */}
-              {discount > 0 && (
-                <div className="flex justify-between text-sm text-gray-500">
-                  <span>Subtotal</span>
+            <div className="space-y-2">
+              {/* Subtotal (jika ada diskon) */}
+              {(discount > 0 || appliedPromotion || pointUsed > 0) && (
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Subtotal ({quantity}x tiket)</span>
                   <span>
                     {new Intl.NumberFormat("id-ID", {
                       style: "currency",
                       currency: "IDR",
                       maximumFractionDigits: 0,
-                    }).format(subTotal)}
+                    }).format(basePrice)}
                   </span>
                 </div>
               )}
 
-              {/* Menampilkan Nominal Diskon */}
+              {/* ⭐ Promotion Discount */}
+              {appliedPromotion && (
+                <div className="flex justify-between text-sm text-purple-600 font-medium">
+                  <span>Diskon Promo ({appliedPromotion.promotionCode})</span>
+                  <span>
+                    -{" "}
+                    {new Intl.NumberFormat("id-ID", {
+                      style: "currency",
+                      currency: "IDR",
+                      maximumFractionDigits: 0,
+                    }).format(appliedPromotion.discountAmount)}
+                  </span>
+                </div>
+              )}
+
+              {/* Coupon Discount */}
               {discount > 0 && (
                 <div className="flex justify-between text-sm text-green-600 font-medium">
-                  <span>Discount ({appliedCouponCode})</span>
+                  <span>Diskon Kupon ({appliedCouponCode})</span>
                   <span>
                     -{" "}
                     {new Intl.NumberFormat("id-ID", {
@@ -360,22 +395,11 @@ export default function TicketingSection({
                   </span>
                 </div>
               )}
-              {promoDiscount > 0 && (
-                <div className="flex justify-between text-sm text-green-600 font-medium">
-                  <span>Discount ({appliedPromoCode})</span>
-                  <span>
-                    -{" "}
-                    {new Intl.NumberFormat("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      maximumFractionDigits: 0,
-                    }).format(promoDiscount)}
-                  </span>
-                </div>
-              )}
+
+              {/* Points Redeemed */}
               {pointUsed > 0 && (
                 <div className="flex justify-between text-sm text-amber-600 font-medium">
-                  <span>Points Redeemed</span>
+                  <span>Poin Digunakan</span>
                   <span>
                     -{" "}
                     {new Intl.NumberFormat("id-ID", {
@@ -387,15 +411,14 @@ export default function TicketingSection({
                 </div>
               )}
 
-              <div className="flex justify-between items-end pt-2">
-                <span className="text-sm text-gray-500 mb-1">
-                  Total Payment
+              {/* Total Payment */}
+              <div className="flex justify-between items-end pt-3 border-t border-gray-200">
+                <span className="text-sm text-gray-600 font-semibold">
+                  Total Pembayaran
                 </span>
                 <div className="text-right">
                   <span className="block text-2xl font-extrabold text-blue-600 leading-none">
-                    {totalPrice === 0 &&
-                    discount === 0 &&
-                    selectedTicket.price === 0
+                    {totalPrice === 0 && selectedTicket.price === 0
                       ? "FREE"
                       : new Intl.NumberFormat("id-ID", {
                           style: "currency",
@@ -410,9 +433,9 @@ export default function TicketingSection({
               </div>
             </div>
 
+            {/* Checkout Button */}
             <button
               onClick={handleCheckout}
-              // Disable tombol jika Sold Out ATAU sedang Loading Submit
               disabled={isSoldOut || isSubmitting}
               className={`w-full font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] 
                 ${

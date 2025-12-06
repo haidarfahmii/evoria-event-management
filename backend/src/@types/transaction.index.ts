@@ -107,6 +107,7 @@ export interface RollbackResult {
   seatsRestored: number;
   pointsRestored: number;
   couponRestored: string | null;
+  promotionRestored: string | null;
   reason: TransactionStatus;
 }
 
