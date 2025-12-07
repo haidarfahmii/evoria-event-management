@@ -168,8 +168,6 @@ export const transactionService: ITransactionService = {
         // Pengguna sudah memiliki tiket (lunas atau sedang dalam proses pembayaran/konfirmasi)
         throw AppError(
           "You already bought a ticket for this event.",409
-          "Anda sudah memiliki tiket aktif atau sedang menunggu pembayaran/konfirmasi untuk acara ini.",
-          409
         );
       }
     }

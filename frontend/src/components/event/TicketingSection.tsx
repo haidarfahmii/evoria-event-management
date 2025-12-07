@@ -177,33 +177,19 @@ export default function TicketingSection({
 
       // // 1. POST ke API
       const response = await axiosInstance.post(`/transactions`, payload);
-      alert("Successfully Buy Ticket");
+      toast.success("Successfully Buy Ticket")
       router.push("/member/tiket-saya");
     } catch (error: any) {
       console.error("Checkout Failed:", error);
-            // // 1. POST ke API
-            const response = await axiosInstance.post(`/transactions`, payload);
-
-            toast.success('Successfully buy ticket');
-            router.push('/member/tiket-saya')
-        } catch (error: any) {
-            console.error("Checkout Failed:", error);
 
       // Tampilkan error (Bisa ganti pakai Toast / Alert)
       const errorMsg =
         error.response?.data?.message || "Terjadi kesalahan saat checkout.";
-      alert(errorMsg);
+      toast.error(errorMsg)
     } finally {
       setIsSubmitting(false);
     }
   };
-            // Tampilkan error (Bisa ganti pakai Toast / Alert)
-            const errorMsg = error.response?.data?.message || "Terjadi kesalahan saat checkout.";
-            toast.error(errorMsg)
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
 
   return (
     <section className="bg-sky-100 sticky top-10 rounded-2xl overflow-hidden">
@@ -229,35 +215,31 @@ export default function TicketingSection({
                   onClick={() => handleTicketSelect(ticket.id)}
                   disabled={ticket.seats === 0}
                   className={`relative flex justify-between items-center p-4 rounded-xl border-2 text-left transition-all duration-200 group
-                                ${
-                                  selectedTicketId === ticket.id
-                                    ? "border-blue-600 bg-blue-50/30 ring-1 ring-blue-600"
-                                    : "border-gray-100 hover:border-blue-300 bg-white"
-                                }
-                                ${
-                                  ticket.seats === 0
-                                    ? "opacity-50 cursor-not-allowed grayscale"
-                                    : ""
-                                }
+                                ${selectedTicketId === ticket.id
+                      ? "border-blue-600 bg-blue-50/30 ring-1 ring-blue-600"
+                      : "border-gray-100 hover:border-blue-300 bg-white"
+                    }
+                                ${ticket.seats === 0
+                      ? "opacity-50 cursor-not-allowed grayscale"
+                      : ""
+                    }
                                 `}
                 >
                   <div>
                     <span
-                      className={`font-bold block ${
-                        selectedTicketId === ticket.id
-                          ? "text-blue-700"
-                          : "text-gray-700"
-                      }`}
+                      className={`font-bold block ${selectedTicketId === ticket.id
+                        ? "text-blue-700"
+                        : "text-gray-700"
+                        }`}
                     >
                       {ticket.name}
                     </span>
                     {ticket.seats > 0 ? (
                       <span
-                        className={`text-xs ${
-                          ticket.seats < 20
-                            ? "text-red-500 font-medium"
-                            : "text-gray-500"
-                        }`}
+                        className={`text-xs ${ticket.seats < 20
+                          ? "text-red-500 font-medium"
+                          : "text-gray-500"
+                          }`}
                       >
                         {ticket.seats} seats available
                       </span>
@@ -417,10 +399,9 @@ export default function TicketingSection({
               onClick={handleCheckout}
               disabled={isSoldOut || isSubmitting}
               className={`w-full font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] 
-                ${
-                  isSoldOut || isSubmitting
-                    ? "bg-gray-300 cursor-not-allowed shadow-none text-gray-500"
-                    : "bg-blue-600 hover:bg-blue-700 hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] active:scale-[0.98] text-white"
+                ${isSoldOut || isSubmitting
+                  ? "bg-gray-300 cursor-not-allowed shadow-none text-gray-500"
+                  : "bg-blue-600 hover:bg-blue-700 hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] active:scale-[0.98] text-white"
                 } flex justify-center items-center gap-2`}
             >
               {isSubmitting ? (
