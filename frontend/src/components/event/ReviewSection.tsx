@@ -15,8 +15,8 @@ interface User {
 interface Review {
     id: string;
     user: User;
-    rating: number; // 1 to 5
-    date: string;
+    rating: number;
+    createdAt: string;
     comment: string;
 }
 
@@ -169,7 +169,16 @@ export default function ReviewSection({ eventId }: ReviewSectionProps) {
                                         <h3 className="text-sm font-semibold text-gray-900">
                                             {review.user.name}
                                         </h3>
-                                        <p className="text-xs text-gray-500">{review.date}</p>
+                                        <p className="text-xs text-gray-500">
+                                            {new Date(review.createdAt).toLocaleString("en-US", {
+                                                year: "numeric",
+                                                month: "long",
+                                                day: "numeric",
+                                                hour: "numeric",
+                                                minute: "numeric",
+                                                hour12: false,
+                                            })}
+                                        </p>
                                     </div>
                                     {renderStars(review.rating)}
                                 </div>
