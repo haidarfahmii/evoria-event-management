@@ -87,7 +87,7 @@ export default function PromotionWidget({
         (p) => p.code.toUpperCase() === inputCode
       );
 
-      // Validasi: Jika kode tidak ditemukan di list event tersebut
+      // 4. Validasi: Jika kode tidak ditemukan di list event tersebut
       if (!foundPromo) {
         throw new Error("Kode promosi tidak valid untuk event ini");
       }
@@ -141,8 +141,7 @@ export default function PromotionWidget({
       console.log(`   Price per ticket: Rp ${originalPrice.toLocaleString()}`);
       console.log(`   Total Price: Rp ${totalPrice.toLocaleString()}`);
       console.log(
-        `   Discount (${foundPromo.value}${
-          foundPromo.type === "PERCENTAGE" ? "%" : ""
+        `   Discount (${foundPromo.value}${foundPromo.type === "PERCENTAGE" ? "%" : ""
         }): Rp ${calculatedDiscount.toLocaleString()}`
       );
       console.log(
@@ -190,10 +189,10 @@ export default function PromotionWidget({
                 {appliedPromo.type === "PERCENTAGE"
                   ? `${appliedPromo.value}% OFF`
                   : `- ${new Intl.NumberFormat("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      maximumFractionDigits: 0,
-                    }).format(appliedPromo.value)}`}
+                    style: "currency",
+                    currency: "IDR",
+                    maximumFractionDigits: 0,
+                  }).format(appliedPromo.value)}`}
               </span>
             </div>
           </div>

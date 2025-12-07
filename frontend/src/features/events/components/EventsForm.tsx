@@ -15,8 +15,13 @@ import useEventsForm from "../hooks/useEventsForm";
 
 import categoriesData from "@/data/categoriesData.json";
 import citiesData from "@/data/citiesData.json";
+import Image from "next/image";
 
-export default function EventsForm() {
+interface EventsFormProps {
+  event?: any;
+}
+
+export default function EventsForm({event}: EventsFormProps) {
   const router = useRouter();
   const { formik } = useEventsForm();
 
@@ -24,6 +29,10 @@ export default function EventsForm() {
   const cities = citiesData.cities;
 
   const [ticketTypes, setTicketTypes] = useState(formik.values.ticketTypes);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    event?.imageUrl || null
+  );
+  const [keepExistingImage, setKeepExistingImage] = useState<boolean>(true); // Track if keeping existing image
 
   const addTicketType = () => {
     const newTicket = {
@@ -49,6 +58,21 @@ export default function EventsForm() {
     );
     setTicketTypes(updatedTickets);
     formik.setFieldValue("ticketTypes", updatedTickets);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.currentTarget.files && e.currentTarget.files[0]) {
+      const file = e.currentTarget.files[0];
+      formik.setFieldValue("imageUrl", [file]);
+      setKeepExistingImage(false); // Mark that we're replacing the image
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const getFieldError = (fieldName: string) => {
@@ -87,8 +111,8 @@ export default function EventsForm() {
             className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white ${getErrorClass(
-                   "name"
-                 )}`}
+              "name"
+            )}`}
             placeholder="e.g Festival Summer 2027"
           />
         </div>
@@ -118,8 +142,8 @@ export default function EventsForm() {
             className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white ${getErrorClass(
-                   "startDate"
-                 )}`}
+              "startDate"
+            )}`}
           />
         </div>
         {getFieldError("startDate") && (
@@ -148,8 +172,8 @@ export default function EventsForm() {
             className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white ${getErrorClass(
-                   "endDate"
-                 )}`}
+              "endDate"
+            )}`}
           />
         </div>
         {getFieldError("endDate") && (
@@ -177,8 +201,8 @@ export default function EventsForm() {
             className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                                 focus:border-blue-500 focus:ring-2 focus:ring-blue-200
                                 focus:outline-none transition duration-150 bg-white ${getErrorClass(
-                                  "city"
-                                )}`}
+              "city"
+            )}`}
           >
             <option value="" className="text-gray-300">
               Select City
@@ -216,8 +240,8 @@ export default function EventsForm() {
             className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white ${getErrorClass(
-                   "venue"
-                 )}`}
+              "venue"
+            )}`}
             placeholder="e.g GBK Arena"
           />
         </div>
@@ -241,8 +265,8 @@ export default function EventsForm() {
             className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                                 focus:border-blue-500 focus:ring-2 focus:ring-blue-200
                                 focus:outline-none transition duration-150 bg-white ${getErrorClass(
-                                  "category"
-                                )}`}
+              "category"
+            )}`}
           >
             <option value="" className="text-gray-300">
               Category
@@ -281,8 +305,8 @@ export default function EventsForm() {
             className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white ${getErrorClass(
-                   "description"
-                 )}`}
+              "description"
+            )}`}
             placeholder="Describe whats coming in your event..."
           ></textarea>
         </div>
@@ -294,10 +318,27 @@ export default function EventsForm() {
       </div>
 
       {/* Image Banner */}
+
+      {/* Current Image Preview */}
+      
+
       <div className="flex flex-col gap-1 col-span-2">
         <label className="text-sm font-medium text-gray-700">
           Image Banner
         </label>
+        {imagePreview && (
+        <div className="relative w-full h-48 mb-2 rounded-lg overflow-hidden border border-gray-200">
+          <Image
+            src={imagePreview}
+            alt="Event Banner Preview"
+            fill
+            className="object-cover"
+          />
+          <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-medium text-gray-600">
+            Current Image
+          </div>
+        </div>
+      )}
 
         <div className="relative w-full">
           <MdImage
@@ -308,20 +349,13 @@ export default function EventsForm() {
           <input
             type="file"
             name="imageUrl"
-            onChange={(e) => {
-              if (e.currentTarget.files) {
-                formik.setFieldValue(
-                  "imageUrl",
-                  Array.from(e.currentTarget.files)
-                );
-              }
-            }}
+            onChange={handleImageChange}
             onBlur={formik.handleBlur}
             className={`border border-gray-300 rounded-md p-2 pl-10 pr-3 w-full
                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
                  focus:outline-none transition duration-150 bg-white ${getErrorClass(
-                   "imageUrl"
-                 )}`}
+              "imageUrl"
+            )}`}
             placeholder="e.g https://example.com/image.jpg"
           />
         </div>

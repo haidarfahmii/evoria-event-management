@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import TicketingSection from "@/components/event/TicketingSection";
+import ReviewSection from "@/components/event/ReviewSection";
 
 interface TicketType {
     id: string;
@@ -247,7 +248,10 @@ export default function EventDetailPage({ params }: { params: Promise<Params> })
                 </section>
 
                 {/* Ticketing Section - Now a Separate Component */}
-                <TicketingSection ticketTypes={event.ticketTypes} eventId={event.id}/>
+                <TicketingSection ticketTypes={event.ticketTypes} eventId={event.id} />
+
+                {/* Review Section */}
+                <ReviewSection eventId={event.id}/>
             </div>
         </main>
     )
