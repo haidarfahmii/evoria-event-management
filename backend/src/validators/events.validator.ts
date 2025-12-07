@@ -25,7 +25,7 @@ export const createEventsValidator = [
         .isISO8601()
         .withMessage("End date must be a valid date")
         .custom((endDate, { req }) => {
-            if (new Date(endDate) <= new Date(req.body.startDate)) {
+            if (new Date(endDate) < new Date(req.body.startDate)) {
                 throw new Error("End date must be after start date");
             }
             return true;
