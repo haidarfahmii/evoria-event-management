@@ -27,6 +27,26 @@ export const dashboardController = {
     });
   },
 
+  async getRecentTransactions(req: Request, res: Response, next: NextFunction) {
+    const organizerId = res?.locals?.payload?.userId;
+    // Query param untuk limit (default 5)
+    const limit = parseInt(req.query.limit as string) || 5;
+
+    const transactions = await dashboardService.getRecentTransactions(
+      organizerId,
+      limit
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Recent transactions retrieved successfully",
+      data: {
+        transactions,
+        total: transactions.length,
+      },
+    });
+  },
+
   async getEventTransactions(req: Request, res: Response, next: NextFunction) {
     const organizerId = res?.locals?.payload?.userId;
     const { eventId } = req.params;
@@ -78,7 +98,7 @@ export const dashboardController = {
 
   async getRevenueStats(req: Request, res: Response, next: NextFunction) {
     const organizerId = res?.locals?.payload?.userId;
-    const period = (req.params.period as "day" | "month" | "year") || "month";
+    const period = (req.query.period as "day" | "month" | "year") || "month";
 
     if (!["day", "month", "year"].includes(period)) {
       return res.status(400).json({
@@ -144,6 +164,7 @@ export const dashboardController = {
 
     const eventsWithStats = events.map((event) => ({
       id: event.id,
+      slug: event.slug,
       name: event.name,
       startDate: event.startDate,
       endDate: event.endDate,

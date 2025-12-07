@@ -33,7 +33,11 @@ export const transactionService: ITransactionService = {
     // get data transaction
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
-      include: { ticketType: true, coupon: true },
+      include: {
+        ticketType: true,
+        coupon: true,
+        promotion: true,
+      },
     });
 
     if (!transaction) throw AppError("Transaction not found", 404);
@@ -47,6 +51,7 @@ export const transactionService: ITransactionService = {
         });
         console.log(`  ✅ Restored ${transaction.qty} seats`);
       }
+
       // Restore Coupon
       if (transaction.couponId) {
         await tx.coupon.update({
@@ -55,6 +60,29 @@ export const transactionService: ITransactionService = {
         });
         console.log(`  ✅ Restored coupon: ${transaction.coupon?.code}`);
       }
+
+      // BARU: Restore Promotion
+      if (transaction.promotionId) {
+        const promotion = await tx.promotion.findUnique({
+          where: { id: transaction.promotionId },
+        });
+
+        // Increment maxUsage kembali (karena sebelumnya di-decrement 1)
+        if (promotion && promotion.maxUsage !== null) {
+          await tx.promotion.update({
+            where: { id: transaction.promotionId },
+            data: {
+              maxUsage: {
+                increment: 1, // ✅ Kembalikan 1 quota (bukan qty!)
+              },
+            },
+          });
+          console.log(
+            `  ✅ Restored promotion: ${transaction.promotion?.code} (quota +1)`
+          );
+        }
+      }
+
       // Restore Points
       if (transaction.pointsUsed > 0) {
         await tx.point.create({
@@ -74,28 +102,12 @@ export const transactionService: ITransactionService = {
       console.log(`  ✅ Updated status to ${reason}`);
     });
 
-    // Send email notification based on reason
-    // try {
-    //   if (reason === TransactionStatus.EXPIRED) {
-    //     await emailService.sendTransactionExpired(transactionId);
-    //   } else if (reason === TransactionStatus.CANCELLED) {
-    //     await emailService.sendTransactionCancelled(transactionId);
-    //   } else if (reason === TransactionStatus.REJECTED) {
-    //     // Email untuk reject sudah dikirim dari Feature 6
-    //     console.log("  ℹ️ Rejection email handled by Feature 6");
-    //   }
-    // } catch (error) {
-    //   console.error(
-    //     `❌ CRITICAL: Failed to send ${reason} email for transaction ${transactionId}:`,
-    //     error
-    //   );
-    // }
-
     return {
       transactionId,
       seatsRestored: transaction.qty,
       pointsRestored: transaction.pointsUsed,
       couponRestored: transaction.coupon?.code || null,
+      promotionRestored: transaction.promotion?.code || null,
       reason,
     };
   },
@@ -147,8 +159,8 @@ export const transactionService: ITransactionService = {
             {
               status: TransactionStatus.WAITING_CONFIRMATION,
               organizerResponseDeadline: { gt: new Date() },
-            }
-          ]
+            },
+          ],
         },
       });
 
@@ -156,10 +168,12 @@ export const transactionService: ITransactionService = {
         // Pengguna sudah memiliki tiket (lunas atau sedang dalam proses pembayaran/konfirmasi)
         throw AppError(
           "You already bought a ticket for this event.",409
+          "Anda sudah memiliki tiket aktif atau sedang menunggu pembayaran/konfirmasi untuk acara ini.",
+          409
         );
       }
     }
-    
+
     const newTransaction = await prisma.$transaction(async (tx) => {
       // Check Ticket & Seats
       const ticket = await tx.ticketType.findUnique({
@@ -178,35 +192,61 @@ export const transactionService: ITransactionService = {
           where: { id: promotionId },
         });
 
-        // Validasi tanggal promosi
+        if (!promotion) {
+          throw AppError("Promotion not found", 404);
+        }
+
+        // Validasi 1: Cek tanggal promosi
         const now = new Date();
-        if (
-          !promotion ||
-          now < promotion.startDate ||
-          now > promotion.endDate
-        ) {
+        if (now < promotion.startDate || now > promotion.endDate) {
           throw AppError("Promotion is invalid or expired", 400);
         }
 
+        // Validasi 2: Cek apakah promotion untuk event ini
+        if (promotion.eventId !== eventId) {
+          throw AppError("Promotion code tidak valid untuk event ini", 400);
+        }
+
+        // Validasi 3: Cek kuota total (maxUsage)
+        if (promotion.maxUsage !== null && promotion.maxUsage <= 0) {
+          throw AppError("Kuota promosi sudah habis", 400);
+        }
+
+        // Hitung Diskon - Diskon dihitung dari totalPrice
+        // totalPrice = price * qty sudah dihitung sebelumnya
+        let promoDiscount = 0;
+
         if (promotion.type === "PERCENTAGE") {
-          const promoDiscount = (totalPrice * promotion.value) / 100;
-          currentPrice -= promoDiscount;
+          // Diskon dari TOTAL HARGA (price * qty)
+          promoDiscount = Math.floor((totalPrice * promotion.value) / 100);
         } else if (promotion.type === "FLAT") {
-          currentPrice -= promotion.value;
+          // Diskon flat tetap (tidak dikalikan qty)
+          // Contoh: diskon Rp 50.000 tetap Rp 50.000
+          promoDiscount = promotion.value;
         }
 
         if (promotion.maxUsage! <= 0) {
           throw AppError("Promotion maxUsage is reached!", 400);
+        // Cap diskon agar tidak melebihi total harga
+        }
+        if (promoDiscount > totalPrice) {
+          promoDiscount = totalPrice;
         }
 
-        await tx.promotion.update({
-          where: { id: promotionId },
-          data: {
-            maxUsage: {
-              decrement: qty,
+        currentPrice -= promoDiscount;
+
+        // Update kuota promotion
+        // Decrement by 1 (BUKAN by qty) karena 1 transaksi = 1 penggunaan
+        if (promotion.maxUsage !== null) {
+          await tx.promotion.update({
+            where: { id: promotionId },
+            data: {
+              maxUsage: {
+                decrement: 1, // decrement 1, bukan qty
+              },
             },
-          },
-        });
+          });
+        }
       }
 
       // Handle Coupon
@@ -390,7 +430,15 @@ export const transactionService: ITransactionService = {
       where: { userId },
       include: {
         user: { select: { id: true, name: true, email: true } },
-        event: { select: { id: true, name: true } },
+        event: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            venue: true,
+            startDate: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });

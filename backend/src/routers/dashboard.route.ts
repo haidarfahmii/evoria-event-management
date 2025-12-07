@@ -15,7 +15,11 @@ router.use(verifyRole([Role.ORGANIZER]));
 router.get("/events", dashboardController.getOrganizerEvents);
 
 // Transactions Management
+// Filter + limit untuk dashboard widget
+router.get("/recent-transactions", dashboardController.getRecentTransactions);
+// Jika ada fitur lain yang butuh semua transaksi
 router.get("/transactions", dashboardController.getOrganizerTransactions);
+// Transaction per Event
 router.get(
   "/events/:eventId/transactions",
   dashboardController.getEventTransactions
@@ -31,7 +35,7 @@ router.patch(
   dashboardController.rejectTransaction
 );
 
-// Statistics
+// Revenue Statistics
 router.get("/statistics", dashboardController.getRevenueStats);
 
 // Attendees

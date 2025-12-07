@@ -16,7 +16,32 @@ export interface TransactionItem {
   createdAt: string;
 }
 
+export interface AttendeeItem {
+  id: string;
+  invoiceId: string;
+  userName: string;
+  userEmail: string;
+  qty: number;
+  totalPrice: number;
+  finalPrice: number;
+  pointsUsed: number;
+  status: string;
+  ticketType?: {
+    name: string;
+    price: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const dashboardService = {
+  getRecentTransactions: async (): Promise<TransactionItem[]> => {
+    const response = await axiosInstance.get("/dashboard/recent-transactions", {
+      params: { limit: 5 },
+    });
+    return response.data.data.transactions || [];
+  },
+
   // ambil daftar transaksi yang spesifik untuk 1 event
   getEventTransactions: async (eventId: string): Promise<TransactionItem[]> => {
     const response = await axiosInstance.get(
@@ -47,10 +72,10 @@ export const dashboardService = {
   },
 
   // api untuk kehadiran
-  getAttendees: async (eventId: string): Promise<string[]> => {
+  getEventAttendees: async (eventId: string): Promise<AttendeeItem[]> => {
     const response = await axiosInstance.get(
       `/dashboard/events/${eventId}/attendees`
     );
-    return response.data?.data?.attendees || [];
+    return response.data.data.attendees || [];
   },
 };
