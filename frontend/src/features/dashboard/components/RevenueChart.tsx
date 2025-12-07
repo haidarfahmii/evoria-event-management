@@ -30,7 +30,7 @@ const periodLabels: Record<Period, string> = {
 export function RevenueChart() {
   const [period, setPeriod] = useState<Period>("month");
   const [data, setData] = useState<{ name: string; total: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,14 +42,22 @@ export function RevenueChart() {
 
         // Transform object { "2025-01": 100000 } menjadi array [{name: "Jan", total: 100000}]
         const rawData = res.data.data;
-        const chartData = Object.keys(rawData).map((key) => ({
-          name: formatLabel(key, period),
-          total: rawData[key],
+
+        const chartData = Object.entries(rawData).map(([key, value]) => ({
+          name: key,
+          total: value as number,
+          // Add sort helper (extract day/month number)
+          // sortValue: extractSortValue(key, period),
         }));
+        // .sort((a, b) => a.sortValue - b.sortValue) // Sort by sortValue
+        // .map(({ name, total }) => ({ name, total })); // Remove sortValue from final data
+
+        // console.log(`[Frontend] Chart data:`, chartData);
 
         setData(chartData);
       } catch (error) {
         console.error("Failed to fetch stats", error);
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -58,20 +66,31 @@ export function RevenueChart() {
     fetchData();
   }, [period]);
 
-  // Helper untuk format label sumbu X
-  const formatLabel = (key: string, type: Period) => {
-    const date = new Date(key);
-    if (type === "day")
-      return new Date(key).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-      });
-    if (type === "month")
-      return new Date(key + "-01").toLocaleDateString("id-ID", {
-        month: "short",
-      }); // format YYYY-MM
-    return key; // Year
-  };
+  // Helper function to extract numeric value for sorting
+  // const extractSortValue = (key: string, type: Period): number => {
+  //   if (type === "day" || type === "month") {
+  //     // Extract day number from "1 Des", "2 Des", etc.
+  //     const dayMatch = key.match(/^(\d+)/);
+  //     return dayMatch ? parseInt(dayMatch[1]) : 0;
+  //   } else {
+  //     // Extract month number from "Jan", "Feb", etc.
+  //     const monthMap: Record<string, number> = {
+  //       Jan: 1,
+  //       Feb: 2,
+  //       Mar: 3,
+  //       Apr: 4,
+  //       Mei: 5,
+  //       Jun: 6,
+  //       Jul: 7,
+  //       Agu: 8,
+  //       Sep: 9,
+  //       Okt: 10,
+  //       Nov: 11,
+  //       Des: 12,
+  //     };
+  //     return monthMap[key] || 0;
+  //   }
+  // };
 
   return (
     <Card className="col-span-4">

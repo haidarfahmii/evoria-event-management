@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { formatRupiah } from "@/utils/formatters";
+import { StatusBadge } from "@/components/ui/shared/statusBadge";
 import { id as idLocale } from "date-fns/locale";
 import axiosInstance from "@/utils/axiosInstance";
 
@@ -49,13 +51,14 @@ interface User {
 interface Event {
   id: string;
   name: string;
-  image?: string;
+  imageUrl?: string;
   venue?: string;
   startDate?: string;
 }
 
 interface Transaction {
   id: string;
+  invoiceId: string;
   userId: string;
   eventId: string;
   ticketTypeId: string;
@@ -68,7 +71,7 @@ interface Transaction {
   status: TransactionStatus;
   paymentProof: string | null;
   paymentProofUploadedAt: string | null;
-  expiresAt: string | null; 
+  expiresAt: string | null;
   organizerResponseDeadline: string | null;
   reminderSent: boolean;
   createdAt: string;
@@ -95,14 +98,6 @@ interface ApiResponse {
  * ==========================================
  */
 
-const formatRupiah = (amount: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
-
 // --- COMPONENT: COUNTDOWN TIMER ---
 const PaymentCountdown = ({ expiresAt }: { expiresAt: string | null }) => {
   const [timeLeft, setTimeLeft] = useState("");
@@ -121,12 +116,18 @@ const PaymentCountdown = ({ expiresAt }: { expiresAt: string | null }) => {
         setIsExpired(true);
         setTimeLeft("Waktu Habis");
       } else {
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const hours = Math.floor(
+          (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
         // Format HH:MM:SS
-        setTimeLeft(`${hours.toString().padStart(2, '0')} : ${minutes.toString().padStart(2, '0')} : ${seconds.toString().padStart(2, '0')}`);
+        setTimeLeft(
+          `${hours.toString().padStart(2, "0")} : ${minutes
+            .toString()
+            .padStart(2, "0")} : ${seconds.toString().padStart(2, "0")}`
+        );
       }
     }, 1000);
 
@@ -136,7 +137,13 @@ const PaymentCountdown = ({ expiresAt }: { expiresAt: string | null }) => {
   if (!expiresAt) return null;
 
   return (
-    <div className={`rounded-lg p-3 text-center border ${isExpired ? 'bg-red-50 border-red-200 text-red-600' : 'bg-orange-50 border-orange-200 text-orange-700'}`}>
+    <div
+      className={`rounded-lg p-3 text-center border ${
+        isExpired
+          ? "bg-red-50 border-red-200 text-red-600"
+          : "bg-orange-50 border-orange-200 text-orange-700"
+      }`}
+    >
       <p className="text-xs font-semibold mb-1 uppercase tracking-wider">
         {isExpired ? "Batas Pembayaran Berakhir" : "Sisa Waktu Pembayaran"}
       </p>
@@ -144,32 +151,6 @@ const PaymentCountdown = ({ expiresAt }: { expiresAt: string | null }) => {
         {timeLeft || "-- : -- : --"}
       </div>
     </div>
-  );
-};
-
-const Badge = ({ status }: { status: TransactionStatus }) => {
-  const styles: Record<TransactionStatus, string> = {
-    WAITING_PAYMENT: "bg-orange-50 text-orange-600 border-orange-200",
-    WAITING_CONFIRMATION: "bg-blue-50 text-blue-600 border-blue-200",
-    DONE: "bg-green-100 text-green-700 border-green-200",
-    REJECTED: "bg-red-50 text-red-600 border-red-200",
-    CANCELLED: "bg-gray-100 text-gray-600 border-gray-200",
-    EXPIRED: "bg-slate-100 text-slate-500 border-slate-200",
-  };
-
-  const labels: Record<TransactionStatus, string> = {
-    WAITING_PAYMENT: "Menunggu Pembayaran",
-    WAITING_CONFIRMATION: "Menunggu Konfirmasi",
-    DONE: "Selesai (E-Voucher)",
-    REJECTED: "Ditolak",
-    CANCELLED: "Dibatalkan",
-    EXPIRED: "Kadaluarsa",
-  };
-
-  return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[status]}`}>
-      {labels[status]}
-    </span>
   );
 };
 
@@ -183,7 +164,7 @@ const Badge = ({ status }: { status: TransactionStatus }) => {
 const TicketDetailModal = ({
   transaction,
   onClose,
-  onSuccessUpload
+  onSuccessUpload,
 }: {
   transaction: Transaction;
   onClose: () => void;
@@ -196,8 +177,16 @@ const TicketDetailModal = ({
 
   if (!transaction) return null;
 
-  const displayDate = format(new Date(transaction.createdAt), "dd MMMM yyyy", { locale: idLocale });
-  const displayTime = format(new Date(transaction.createdAt), "HH:mm", { locale: idLocale }) + " WIB";
+  const displayDate = format(
+    new Date(transaction.event.startDate as string),
+    "dd MMMM yyyy",
+    {
+      locale: idLocale,
+    }
+  );
+  const displayTime =
+    format(new Date(transaction.createdAt), "HH:mm", { locale: idLocale }) +
+    " WIB";
   const displayVenue = transaction.event.venue || "Venue TBA";
 
   // --- LOGIC UPLOAD ---
@@ -210,7 +199,9 @@ const TicketDetailModal = ({
         return;
       }
       // Validasi tipe
-      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(selectedFile.type)) {
+      if (
+        !["image/jpeg", "image/png", "image/jpg"].includes(selectedFile.type)
+      ) {
         setUploadError("Hanya format JPG, JPEG, dan PNG yang diperbolehkan");
         return;
       }
@@ -240,8 +231,8 @@ const TicketDetailModal = ({
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
-          }
+            "Content-Type": "multipart/form-data",
+          },
         }
       );
 
@@ -252,7 +243,9 @@ const TicketDetailModal = ({
       }
     } catch (err: any) {
       console.error("Upload error:", err);
-      setUploadError(err.response?.data?.message || "Gagal mengupload bukti pembayaran.");
+      setUploadError(
+        err.response?.data?.message || "Gagal mengupload bukti pembayaran."
+      );
     } finally {
       setIsUploading(false);
     }
@@ -289,7 +282,7 @@ const TicketDetailModal = ({
             <div className="grid grid-cols-2 gap-y-6 gap-x-4">
               <div>
                 <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
-                  Tanggal Transaksi
+                  Tanggal Event
                 </p>
                 <div className="flex items-center gap-2 text-gray-800 font-semibold">
                   <Calendar size={18} className="text-blue-600" /> {displayDate}
@@ -318,7 +311,7 @@ const TicketDetailModal = ({
               <div className="flex justify-between border-b border-blue-100 pb-2">
                 <span className="text-xs text-gray-500">Transaction ID</span>
                 <span className="text-sm font-mono font-bold text-blue-800 tracking-wider truncate max-w-[150px]">
-                  {transaction.id}
+                  {transaction.invoiceId}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -339,13 +332,12 @@ const TicketDetailModal = ({
 
         {/* RIGHT SIDE: Action / QR / Upload */}
         <div className="w-full md:w-1/3 bg-gray-50 p-6 md:p-8 flex flex-col border-l-0 md:border-l-2 border-dashed border-gray-300 relative overflow-y-auto">
-
           {/* KONDISI 1: SUDAH SELESAI (DONE) -> Tampilkan QR */}
           {transaction.status === TransactionStatus.DONE && (
             <div className="flex flex-col items-center justify-center h-full">
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 w-full max-w-[200px]">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${transaction.id}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${transaction.invoiceId}`}
                   alt="QR Code"
                   className="w-full h-full opacity-90"
                 />
@@ -363,7 +355,7 @@ const TicketDetailModal = ({
           {transaction.status === TransactionStatus.WAITING_PAYMENT && (
             <div className="flex flex-col h-full gap-4">
               <div className="mb-2">
-                <Badge status={transaction.status} />
+                <StatusBadge status={transaction.status} />
               </div>
 
               {/* Countdown Component */}
@@ -381,8 +373,12 @@ const TicketDetailModal = ({
                   {!previewUrl ? (
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center bg-white hover:bg-gray-50 transition-colors cursor-pointer text-center">
                       <UploadCloud className="text-gray-400 mb-2" size={32} />
-                      <p className="text-xs text-gray-500">Klik untuk upload gambar</p>
-                      <p className="text-[10px] text-gray-400 mt-1">Max 2MB (JPG/PNG)</p>
+                      <p className="text-xs text-gray-500">
+                        Klik untuk upload gambar
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        Max 2MB (JPG/PNG)
+                      </p>
                       <input
                         type="file"
                         accept="image/*"
@@ -392,9 +388,16 @@ const TicketDetailModal = ({
                     </div>
                   ) : (
                     <div className="relative rounded-lg overflow-hidden border border-gray-200">
-                      <img src={previewUrl} alt="Preview" className="w-full h-40 object-cover" />
+                      <img
+                        src={previewUrl}
+                        alt="Preview"
+                        className="w-full h-40 object-cover"
+                      />
                       <button
-                        onClick={() => { setFile(null); setPreviewUrl(null); }}
+                        onClick={() => {
+                          setFile(null);
+                          setPreviewUrl(null);
+                        }}
                         className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
                       >
                         <X size={14} />
@@ -417,7 +420,10 @@ const TicketDetailModal = ({
                 className="w-full bg-orange-600 hover:bg-orange-700 mt-auto"
               >
                 {isUploading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengupload...</>
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                    Mengupload...
+                  </>
                 ) : (
                   "Konfirmasi Pembayaran"
                 )}
@@ -431,27 +437,31 @@ const TicketDetailModal = ({
               <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-600">
                 <CheckCircle size={32} />
               </div>
-              <h3 className="font-bold text-gray-800">Bukti Diterima</h3>
+              <h3 className="font-bold text-gray-800">
+                Bukti Berhasil Diupload
+              </h3>
               <p className="text-xs text-gray-500 mt-2 mb-4">
-                Kami sedang memverifikasi pembayaran Anda. Mohon tunggu maksimal 3x24 jam.
+                Kami sedang memverifikasi pembayaran Anda. Mohon tunggu maksimal
+                3x24 jam.
               </p>
-              <Badge status={transaction.status} />
+              <StatusBadge status={transaction.status} />
             </div>
           )}
 
           {/* KONDISI LAIN (CANCELLED / EXPIRED / REJECTED) */}
-          {['CANCELLED', 'EXPIRED', 'REJECTED'].includes(transaction.status) && (
+          {["CANCELLED", "EXPIRED", "REJECTED"].includes(
+            transaction.status
+          ) && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
                 <X size={32} />
               </div>
               <h3 className="font-bold text-gray-700">Transaksi Tidak Aktif</h3>
               <div className="mt-4">
-                <Badge status={transaction.status} />
+                <StatusBadge status={transaction.status} />
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>
@@ -466,9 +476,15 @@ const TicketCard = ({
   transaction: Transaction;
   onClick: () => void;
 }) => {
-  const imageUrl = transaction.event.image || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=600&auto=format&fit=crop";
-  const displayDate = format(new Date(transaction.createdAt), "dd MMM yyyy", { locale: idLocale });
-  const displayTime = format(new Date(transaction.createdAt), "HH:mm", { locale: idLocale }) + " WIB";
+  const imageUrl =
+    transaction.event.imageUrl ||
+    "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=600&auto=format&fit=crop";
+  const displayDate = format(new Date(transaction.createdAt), "dd MMM yyyy", {
+    locale: idLocale,
+  });
+  const displayTime =
+    format(new Date(transaction.createdAt), "HH:mm", { locale: idLocale }) +
+    " WIB";
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group">
@@ -482,7 +498,7 @@ const TicketCard = ({
             className="object-cover w-full h-full"
           />
           <div className="absolute top-2 left-2 md:hidden">
-            <Badge status={transaction.status} />
+            <StatusBadge status={transaction.status} />
           </div>
         </div>
 
@@ -491,7 +507,7 @@ const TicketCard = ({
           <div className="flex justify-between items-start mb-2">
             <div>
               <div className="hidden md:block mb-2">
-                <Badge status={transaction.status} />
+                <StatusBadge status={transaction.status} />
               </div>
               <h3 className="font-bold text-gray-900 text-lg leading-tight group-hover:text-blue-600 transition-colors mb-2 line-clamp-1">
                 {transaction.eventName}
@@ -522,13 +538,13 @@ const TicketCard = ({
           <div className="mt-4 pt-4 border-t border-gray-50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-xs text-gray-500 overflow-hidden w-full md:w-auto">
               <FileText size={14} className="shrink-0" />
-              <span className="truncate">ID: {transaction.id}</span>
+              <span className="truncate">ID: {transaction.invoiceId}</span>
               <button
                 className="text-blue-600 hover:text-blue-800 ml-1 shrink-0"
                 title="Copy ID"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigator.clipboard.writeText(transaction.id)
+                  navigator.clipboard.writeText(transaction.invoiceId);
                 }}
               >
                 <Copy size={12} />
@@ -544,20 +560,36 @@ const TicketCard = ({
               </div>
 
               {transaction.status === TransactionStatus.WAITING_PAYMENT && (
-                <Button onClick={onClick} size="sm" className="ml-auto bg-orange-500 hover:bg-orange-600">
+                <Button
+                  onClick={onClick}
+                  size="sm"
+                  className="ml-auto bg-orange-500 hover:bg-orange-600"
+                >
                   Bayar & Upload
                 </Button>
               )}
 
               {transaction.status === TransactionStatus.DONE && (
-                <Button onClick={onClick} size="sm" className="ml-auto bg-blue-600 hover:bg-blue-700">
+                <Button
+                  onClick={onClick}
+                  size="sm"
+                  className="ml-auto bg-blue-600 hover:bg-blue-700"
+                >
                   <QrCode size={16} className="mr-2" /> E-Ticket
                 </Button>
               )}
 
               {/* Default button for other statuses */}
-              {![TransactionStatus.WAITING_PAYMENT, TransactionStatus.DONE].includes(transaction.status) && (
-                <Button onClick={onClick} size="sm" variant="outline" className="ml-auto">
+              {![
+                TransactionStatus.WAITING_PAYMENT,
+                TransactionStatus.DONE,
+              ].includes(transaction.status) && (
+                <Button
+                  onClick={onClick}
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto"
+                >
                   Lihat Detail
                 </Button>
               )}
@@ -574,14 +606,17 @@ export default function TiketSayaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState<TransactionStatus | "all">("all");
 
   // Pindahkan fetch ke fungsi terpisah agar bisa dipanggil ulang
   const fetchTransactions = async () => {
     try {
       setLoading(true); // Opsional: matikan loading UI blocking jika hanya refresh data background
-      const { data } = await axiosInstance.get<ApiResponse>("/transactions/my-transactions");
+      const { data } = await axiosInstance.get<ApiResponse>(
+        "/transactions/my-transactions"
+      );
 
       if (data.success) {
         setTransactions(data.data.transactions);
@@ -608,7 +643,10 @@ export default function TiketSayaPage() {
   const tabs = [
     { id: "all", label: "Semua" },
     { id: TransactionStatus.WAITING_PAYMENT, label: "Belum Bayar" },
-    { id: TransactionStatus.WAITING_CONFIRMATION, label: "Menunggu Konfirmasi" },
+    {
+      id: TransactionStatus.WAITING_CONFIRMATION,
+      label: "Menunggu Konfirmasi",
+    },
     { id: TransactionStatus.DONE, label: "Selesai" },
     { id: TransactionStatus.REJECTED, label: "Ditolak" },
     { id: TransactionStatus.EXPIRED, label: "Kadaluarsa" },
@@ -626,11 +664,7 @@ export default function TiketSayaPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchTransactions}
-          >
+          <Button variant="outline" size="sm" onClick={fetchTransactions}>
             Refresh Data
           </Button>
         </div>
@@ -639,28 +673,35 @@ export default function TiketSayaPage() {
       {/* Custom Tabs Navigation */}
       <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar pb-1">
         {tabs.map((tab) => {
-          const count = tab.id === 'all'
-            ? transactions.length
-            : transactions.filter(t => t.status === tab.id).length;
+          const count =
+            tab.id === "all"
+              ? transactions.length
+              : transactions.filter((t) => t.status === tab.id).length;
 
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${activeTab === tab.id
-                ? "border-[#00388D] text-[#00388D]"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+              className={`px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
+                activeTab === tab.id
+                  ? "border-[#00388D] text-[#00388D]"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
             >
               {tab.label}
               {count > 0 && (
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === tab.id ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
-                  }`}>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full ${
+                    activeTab === tab.id
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-500"
+                  }`}
+                >
                   {count}
                 </span>
               )}
             </button>
-          )
+          );
         })}
       </div>
 

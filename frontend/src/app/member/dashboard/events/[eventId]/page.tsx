@@ -11,10 +11,8 @@ import {
   AlertCircle,
   Banknote,
   Ticket,
-  ChevronsLeft,
-  ChevronRight,
-  ChevronsRight,
-  ChevronLeft,
+  FileText,
+  Users,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -25,49 +23,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   dashboardService,
   TransactionItem,
+  AttendeeItem,
 } from "@/features/dashboard/services/dashboard.service";
 import { eventService, Event } from "@/features/events/services/event.service";
 import { TransactionStatus } from "@/@types";
 
-// Helper Format Rupiah
-const formatRupiah = (number: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(number);
-};
-
-// Helper Badge Status
-const StatusBadge = ({ status }: { status: TransactionStatus }) => {
-  const styles: Record<TransactionStatus, string> = {
-    [TransactionStatus.WAITING_PAYMENT]:
-      "bg-orange-100 text-orange-700 border-orange-200",
-    [TransactionStatus.WAITING_CONFIRMATION]:
-      "bg-blue-100 text-blue-700 border-blue-200",
-    [TransactionStatus.DONE]: "bg-green-100 text-green-700 border-green-200",
-    [TransactionStatus.REJECTED]: "bg-red-100 text-red-700 border-red-200",
-    [TransactionStatus.EXPIRED]: "bg-gray-100 text-gray-500 border-gray-200",
-    [TransactionStatus.CANCELLED]: "bg-gray-100 text-gray-500 border-gray-200",
-  };
-
-  const labels: Record<TransactionStatus, string> = {
-    [TransactionStatus.WAITING_PAYMENT]: "Menunggu Bayar",
-    [TransactionStatus.WAITING_CONFIRMATION]: "Perlu Verifikasi",
-    [TransactionStatus.DONE]: "Selesai",
-    [TransactionStatus.REJECTED]: "Ditolak",
-    [TransactionStatus.EXPIRED]: "Kadaluarsa",
-    [TransactionStatus.CANCELLED]: "Dibatalkan",
-  };
-
-  return (
-    <span
-      className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${styles[status]}`}
-    >
-      {labels[status]}
-    </span>
-  );
-};
+import {
+  TabNavigation,
+  TabId,
+  Tab,
+} from "@/features/dashboard/components/TabNavigation";
+import { formatRupiah } from "@/utils/formatters";
+import { StatusBadge } from "@/components/ui/shared/statusBadge";
+import { Pagination } from "@/components/ui/shared/pagination";
+import { AttendeeList } from "@/features/dashboard/components/AttendeeList";
+import useDebounce from "@/hooks/use-debounce";
 
 export default function EventReportPage() {
   const router = useRouter();
@@ -80,8 +50,14 @@ export default function EventReportPage() {
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
+  const [activeTab, setActiveTab] = useState<TabId>("transactions");
+
+  const [attendees, setAttendees] = useState<AttendeeItem[]>([]);
+  const [attendeesLoading, setAttendeesLoading] = useState<boolean>(false);
+
   // filter state
-  const [search, setSearch] = useState<string>("");
+  const [searchInput, setSearchInput] = useState<string>("");
+  const debouncedSearch = useDebounce<string>(searchInput, 500);
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "ALL">(
     "ALL"
   );
@@ -96,13 +72,13 @@ export default function EventReportPage() {
   const [rejectReason, setRejectReason] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-  // Load Data
+  // Load Data (Transactions + Attendees)
   const fetchData = async () => {
     if (!eventId) return;
     try {
       setLoading(true);
 
-      // Gunakan Promise.all untuk fetch paralel agar lebih cepat
+      // Fetch event data dan transactions (existing)
       const [eventsData, trxData] = await Promise.all([
         eventService.getOrganizerEvents(),
         dashboardService.getEventTransactions(eventId),
@@ -124,13 +100,41 @@ export default function EventReportPage() {
     }
   };
 
+  const fetchAttendees = async () => {
+    if (!eventId) return;
+
+    try {
+      setAttendeesLoading(true);
+      const data = await dashboardService.getEventAttendees(eventId);
+
+      // Transform data untuk AttendeeList component
+      const transformedData: any = data.map((item) => ({
+        id: item.id,
+        userName: item.userName,
+        userEmail: item.userEmail,
+        qty: item.qty,
+        finalPrice: item.finalPrice,
+        ticketTypeName: item.ticketType?.name || "Regular",
+        createdAt: item.createdAt,
+      }));
+
+      setAttendees(transformedData);
+    } catch (error) {
+      console.error("Error loading attendees:", error);
+      toast.error("Gagal memuat daftar peserta");
+    } finally {
+      setAttendeesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchAttendees();
   }, [eventId]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, statusFilter, itemsPerPage]);
+  }, [debouncedSearch, statusFilter, itemsPerPage]);
 
   const handleVerify = async (action: "ACCEPT" | "REJECT") => {
     if (!selectedTrx) return;
@@ -154,6 +158,7 @@ export default function EventReportPage() {
       setIsModalOpen(false);
       setRejectReason("");
       fetchData();
+      fetchAttendees();
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Gagal memproses verifikasi"
@@ -181,7 +186,7 @@ export default function EventReportPage() {
     // Safety check: pastikan nilai string tidak null/undefined
     const userName = t.userName || "";
     const invoiceId = t.invoiceId || "";
-    const searchTerm = search.toLowerCase();
+    const searchTerm = debouncedSearch.toLowerCase();
 
     const matchesSearch =
       userName.toLowerCase().includes(searchTerm) ||
@@ -197,6 +202,21 @@ export default function EventReportPage() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const tabs: Tab[] = [
+    {
+      id: "transactions",
+      label: "Transaksi",
+      icon: <FileText className="w-4 h-4" />,
+      count: transactions.length,
+    },
+    {
+      id: "attendees",
+      label: "Daftar Peserta",
+      icon: <Users className="w-4 h-4" />,
+      count: attendees.length,
+    },
+  ];
 
   if (loading) {
     return (
@@ -220,7 +240,14 @@ export default function EventReportPage() {
           </p>
         </div>
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" size="sm" onClick={fetchData}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchData();
+              fetchAttendees();
+            }}
+          >
             Refresh Data
           </Button>
         </div>
@@ -288,200 +315,158 @@ export default function EventReportPage() {
         </Card>
       </div>
 
-      {/* Transactions Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row justify-between gap-4">
-            <CardTitle>Daftar Transaksi</CardTitle>
+      {/* Tab Navigation */}
+      <Card className="overflow-hidden">
+        <TabNavigation
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
 
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <Input
-                  placeholder="Cari nama / ID..."
-                  className="pl-9 w-full sm:w-[250px]"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
+        {/* Tab Content - Conditional Rendering */}
+        <div className="p-6">
+          {activeTab === "transactions" ? (
+            /* TAB TRANSACTIONS */
+            <div className="space-y-6">
+              {/* Search & Filter */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <Input
+                    placeholder="Cari nama / ID..."
+                    className="pl-9"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                  />
+                </div>
 
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as TransactionStatus | "ALL")
-                }
-              >
-                <option value="ALL">Semua Status</option>
-                <option value={TransactionStatus.WAITING_CONFIRMATION}>
-                  Perlu Verifikasi
-                </option>
-                <option value={TransactionStatus.DONE}>Selesai</option>
-                <option value={TransactionStatus.WAITING_PAYMENT}>
-                  Belum Bayar
-                </option>
-                <option value={TransactionStatus.REJECTED}>Ditolak</option>
-                <option value={TransactionStatus.CANCELLED}>Dibatalkan</option>
-              </select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto rounded-md border border-slate-200">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
-                <tr>
-                  <th className="px-4 py-3">ID Transaksi</th>
-                  <th className="px-4 py-3">Pembeli</th>
-                  <th className="px-4 py-3">Jumlah</th>
-                  <th className="px-4 py-3">Total Harga</th>
-                  <th className="px-4 py-3">Tanggal</th>
-                  <th className="px-4 py-3 text-center">Status</th>
-                  <th className="px-4 py-3 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((trx) => (
-                    <tr
-                      key={trx.id}
-                      className="hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">
-                        {trx.invoiceId}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-slate-800">
-                          {trx.userName || "Unknown"}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {trx.userEmail || "-"}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {trx.qty} Tiket
-                      </td>
-                      <td className="px-4 py-3 font-medium text-slate-800">
-                        {formatRupiah(trx.finalPrice)}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">
-                        {new Date(trx.createdAt).toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <StatusBadge status={trx.status} />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {trx.status ===
-                        TransactionStatus.WAITING_CONFIRMATION ? (
-                          <Button
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                            onClick={() => {
-                              setSelectedTrx(trx);
-                              setIsModalOpen(true);
-                            }}
-                          >
-                            Verifikasi
-                          </Button>
-                        ) : (
-                          <span className="text-slate-300 text-xs italic">
-                            No Action
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-4 py-8 text-center text-slate-500"
-                    >
-                      Tidak ada transaksi yang ditemukan.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination controls */}
-          {filteredData.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <span>Tampilkan</span>
                 <select
-                  className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs focus:ring-1 focus:ring-ring"
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
+                  value={statusFilter}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as TransactionStatus | "ALL")
+                  }
                 >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
+                  <option value="ALL">Semua Status</option>
+                  <option value={TransactionStatus.WAITING_CONFIRMATION}>
+                    Perlu Verifikasi
+                  </option>
+                  <option value={TransactionStatus.DONE}>Selesai</option>
+                  <option value={TransactionStatus.WAITING_PAYMENT}>
+                    Belum Bayar
+                  </option>
+                  <option value={TransactionStatus.REJECTED}>Ditolak</option>
+                  <option value={TransactionStatus.CANCELLED}>
+                    Dibatalkan
+                  </option>
+                  <option value={TransactionStatus.EXPIRED}>Kadaluarsa</option>
                 </select>
-                <span>data</span>
-                <span className="hidden sm:inline-block ml-2 text-slate-400">
-                  ({startIndex + 1} - {Math.min(endIndex, filteredData.length)}{" "}
-                  dari {filteredData.length})
-                </span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <span className="text-sm font-medium px-2 min-w-20 text-center">
-                  Hal {currentPage} / {totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
+              {/* Transactions Table */}
+              <div className="overflow-x-auto rounded-md border border-slate-200">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3">ID Transaksi</th>
+                      <th className="px-4 py-3">Pembeli</th>
+                      <th className="px-4 py-3">Jumlah</th>
+                      <th className="px-4 py-3">Total Harga</th>
+                      <th className="px-4 py-3">Tanggal</th>
+                      <th className="px-4 py-3 text-center">Status</th>
+                      <th className="px-4 py-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {paginatedData.length > 0 ? (
+                      paginatedData.map((trx) => (
+                        <tr
+                          key={trx.id}
+                          className="hover:bg-slate-50 transition-colors"
+                        >
+                          <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                            {trx.invoiceId}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-slate-800">
+                              {trx.userName || "Unknown"}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {trx.userEmail || "-"}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {trx.qty} Tiket
+                          </td>
+                          <td className="px-4 py-3 font-medium text-slate-800">
+                            {formatRupiah(trx.finalPrice)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 text-xs">
+                            {new Date(trx.createdAt).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <StatusBadge status={trx.status} />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {trx.status ===
+                            TransactionStatus.WAITING_CONFIRMATION ? (
+                              <Button
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                                onClick={() => {
+                                  setSelectedTrx(trx);
+                                  setIsModalOpen(true);
+                                }}
+                              >
+                                Verifikasi
+                              </Button>
+                            ) : (
+                              <span className="text-slate-300 text-xs italic">
+                                No Action
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="px-4 py-8 text-center text-slate-500"
+                        >
+                          Tidak ada transaksi yang ditemukan.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
+
+              {/* Pagination */}
+              {paginatedData.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredData.length}
+                  totalPages={totalPages}
+                  onPageChange={(page) => setCurrentPage(page)}
+                  onItemsPerPageChange={(items) => setItemsPerPage(items)}
+                />
+              )}
             </div>
+          ) : (
+            /* TAB ATTENDEES */
+            <AttendeeList attendees={attendees} loading={attendeesLoading} />
           )}
-        </CardContent>
+        </div>
       </Card>
 
       {/* Modal Verifikasi */}
@@ -509,6 +494,7 @@ export default function EventReportPage() {
                       alt="Bukti Transfer"
                       fill
                       className="object-contain"
+                      unoptimized
                     />
                   ) : (
                     <div className="text-slate-400 flex flex-col items-center">
