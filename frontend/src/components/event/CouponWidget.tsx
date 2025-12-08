@@ -10,7 +10,7 @@ export interface CouponData {
   id: string;
   code: string;
   percentage: number;
-  expiredAt: string;
+  expiresAt: string;
   isUsed: boolean;
 }
 
@@ -61,7 +61,7 @@ export default function CouponWidget({
 
       // Filter: hanya tampilkan coupon yang belum expired dan belum used
       const validCoupons = coupons.filter((c) => {
-        const isExpired = new Date(c.expiredAt) < new Date();
+        const isExpired = new Date(c.expiresAt) < new Date();
         return !c.isUsed && !isExpired;
       });
 
@@ -185,7 +185,7 @@ export default function CouponWidget({
                 </p>
                 <p className="text-[10px] text-gray-500">
                   Berlaku hingga{" "}
-                  {new Date(coupon.expiredAt).toLocaleDateString("id-ID")}
+                  {new Date(coupon.expiresAt).toLocaleDateString("id-ID")}
                 </p>
               </div>
               <span className="text-green-600 text-xs font-semibold group-hover:text-green-700">

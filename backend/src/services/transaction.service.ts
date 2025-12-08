@@ -166,9 +166,7 @@ export const transactionService: ITransactionService = {
 
       if (existingActiveTicket) {
         // Pengguna sudah memiliki tiket (lunas atau sedang dalam proses pembayaran/konfirmasi)
-        throw AppError(
-          "You already bought a ticket for this event.",409
-        );
+        throw AppError("You already bought a ticket for this event.", 409);
       }
     }
 
@@ -225,7 +223,7 @@ export const transactionService: ITransactionService = {
 
         if (promotion.maxUsage! <= 0) {
           throw AppError("Promotion maxUsage is reached!", 400);
-        // Cap diskon agar tidak melebihi total harga
+          // Cap diskon agar tidak melebihi total harga
         }
         if (promoDiscount > totalPrice) {
           promoDiscount = totalPrice;
@@ -435,6 +433,7 @@ export const transactionService: ITransactionService = {
             imageUrl: true,
             venue: true,
             startDate: true,
+            endDate: true,
           },
         },
       },

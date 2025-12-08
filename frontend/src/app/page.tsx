@@ -157,10 +157,11 @@ export default function Home() {
             </div>
             <button
               onClick={() => handleCategoryChange("All")}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === "All"
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                selectedCategory === "All"
                   ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
                   : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
-                }`}
+              }`}
             >
               All
             </button>
@@ -169,10 +170,11 @@ export default function Home() {
               <button
                 key={cat}
                 onClick={() => handleCategoryChange(cat)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === cat
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  selectedCategory === cat
                     ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
                     : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
-                  }`}
+                }`}
               >
                 {cat}
               </button>
