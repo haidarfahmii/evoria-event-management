@@ -23,7 +23,7 @@ export default function Home() {
   const { getParam, setParam } = useUrlState();
   const [events, setEvents] = useState<any[]>([]);
 
-  // 1. Initialize State directly (Lazy Initialization)
+  // Initialize State directly (Lazy Initialization)
   // This prevents the need for a separate useEffect just to set initial values
   const [searchInput, setSearchInput] = useState(
     () => getParam("search") || ""
@@ -70,7 +70,6 @@ export default function Home() {
         setParam("search", debouncedSearch);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   // 2. Sync Page
@@ -81,7 +80,6 @@ export default function Home() {
         setParam("page", currentPage.toString());
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   // 3. Reset Pagination Logic
@@ -89,7 +87,6 @@ export default function Home() {
     if (isMounted.current) {
       setCurrentPage(1);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, selectedCity, selectedCategory]);
 
   // Filtering Logic
@@ -294,7 +291,7 @@ export default function Home() {
                         <button
                           key={page}
                           onClick={() => handlePageChange(page)}
-                          className={`min-w-[40px] h-10 rounded-lg text-sm font-medium transition-all ${
+                          className={`min-w-10 h-10 rounded-lg text-sm font-medium transition-all ${
                             currentPage === page
                               ? "bg-slate-900 text-white shadow-md"
                               : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"

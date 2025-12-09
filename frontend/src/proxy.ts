@@ -15,8 +15,13 @@ export default withAuth(
       return NextResponse.redirect(new URL("/", req.url));
     }
 
+    const isOrganizerRoute =
+      pathname.startsWith("/member/dashboard") ||
+      pathname.startsWith("/member/events") ||
+      pathname.startsWith("/create-event");
+
     // Protect Dashboard Routes: Only ORGANIZER can access
-    if (pathname.startsWith("/member/dashboard") && role !== "ORGANIZER") {
+    if (isOrganizerRoute && role !== "ORGANIZER") {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
@@ -36,7 +41,7 @@ export default withAuth(
           return true;
         }
 
-        // Untuk halaman lain (dashboard, profile), user wajib login
+        // Semua halaman yang masuk matcher di bawah WAJIB login
         return !!token;
       },
     },
@@ -45,5 +50,11 @@ export default withAuth(
 
 // Define which routes to protect
 export const config = {
-  matcher: ["/member/:path*", "/profile/:path*", "/login", "/register"],
+  matcher: [
+    "/member/:path*",
+    "/profile/:path*",
+    "/create-event/:path*",
+    "/login",
+    "/register",
+  ],
 };

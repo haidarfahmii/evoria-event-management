@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DollarSign, Calendar, CreditCard, Users } from "lucide-react";
+import { DollarSign, Calendar, CreditCard, Users, Ticket } from "lucide-react";
+import { FaRupiahSign } from "react-icons/fa6";
 import { StatCard } from "@/features/dashboard/components/StatCard";
 import { RevenueChart } from "@/features/dashboard/components/RevenueChart";
 import { RecentSales } from "@/features/dashboard/components/RecentSales";
@@ -20,23 +21,41 @@ export default function DashboardOrganizerPage() {
     totalRevenue: 0,
     totalEvents: 0,
     totalTicketsSold: 0,
-    totalTransactions: 0, // Kita asumsikan ini total tiket terjual untuk saat ini
+    totalCapacity: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch events untuk mendapatkan kalkulasi total revenue & tickets
         const eventsRes = await axiosInstance.get("/dashboard/events");
         const eventsData = eventsRes.data.data.events || [];
 
+        // 1. Hitung Revenue (Total Pendapatan)
         const calculatedRevenue = eventsData.reduce(
           (acc: number, curr: any) => acc + (curr.totalRevenue || 0),
           0
         );
+
+        // 2. Hitung Tiket Terjual
         const calculatedTickets = eventsData.reduce(
           (acc: number, curr: any) => acc + (curr.totalTicketsSold || 0),
+          0
+        );
+
+        // 3. Hitung Total Kapasitas (Total Seats dari TicketType)
+        // Berdasarkan schema: Event -> TicketType[] -> seats
+        const calculatedCapacity = eventsData.reduce(
+          (acc: number, curr: any) => {
+            // Cek apakah ticketTypes ada dalam response API
+            const eventSeats = curr.ticketTypes
+              ? curr.ticketTypes.reduce(
+                  (sum: number, type: any) => sum + (type.seats || 0),
+                  0
+                )
+              : 0;
+            return acc + eventSeats;
+          },
           0
         );
 
@@ -44,7 +63,7 @@ export default function DashboardOrganizerPage() {
           totalRevenue: calculatedRevenue,
           totalEvents: eventsRes.data.data.total || 0,
           totalTicketsSold: calculatedTickets,
-          totalTransactions: calculatedTickets, // Simplifikasi: 1 tiket = 1 transaksi sukses
+          totalCapacity: calculatedCapacity,
         });
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
@@ -55,6 +74,14 @@ export default function DashboardOrganizerPage() {
 
     fetchDashboardData();
   }, []);
+
+  // Helper function untuk menghitung persentase
+  const getOccupancyRate = () => {
+    if (stats.totalCapacity === 0) return "0%";
+    const percentage = (stats.totalTicketsSold / stats.totalCapacity) * 100;
+    // Tampilkan desimal jika perlu, misal: 95.5%
+    return `${percentage.toFixed(1)}%`;
+  };
 
   if (loading) {
     return (
@@ -72,7 +99,7 @@ export default function DashboardOrganizerPage() {
         </h2>
       </div>
 
-      {/* 1. Summary Cards */}
+      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Pendapatan"
@@ -81,7 +108,7 @@ export default function DashboardOrganizerPage() {
             currency: "IDR",
           }).format(stats.totalRevenue)}
           description="Total pendapatan dari semua event"
-          icon={DollarSign}
+          icon={FaRupiahSign}
         />
         <StatCard
           title="Event Aktif"
@@ -90,30 +117,24 @@ export default function DashboardOrganizerPage() {
           icon={Calendar}
         />
         <StatCard
-          title="Tickets Terjual"
+          title="Tiket Terjual"
           value={stats.totalTicketsSold.toString()}
           description="Total tiket terjual"
-          icon={CreditCard}
+          icon={Ticket}
         />
         <StatCard
-          title="Konversi"
-          value={
-            stats.totalEvents > 0
-              ? `${(stats.totalTicketsSold / (stats.totalEvents * 100)).toFixed(
-                  1
-                )}%`
-              : "0%"
-          } // Dummy logic for demo
-          description="Rata-rata penjualan tiket per event"
+          title="Tingkat Okupansi"
+          value={getOccupancyRate()}
+          description={`Dari total ${stats.totalCapacity} kursi tersedia`}
           icon={Users}
         />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* 2. Main Chart (Occupies 4 columns) */}
+        {/* Main Chart (Occupies 4 columns) */}
         <RevenueChart />
 
-        {/* 3. Recent Sales / Transactions (Occupies 3 columns) */}
+        {/* Recent Sales / Transactions (Occupies 3 columns) */}
         <Card className="col-span-4 lg:col-span-3">
           <CardHeader>
             <CardTitle>Transaksi Terbaru</CardTitle>

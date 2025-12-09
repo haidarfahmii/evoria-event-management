@@ -35,16 +35,16 @@ export default function Navbar() {
   const isLoggedIn = status === "authenticated";
   const isOrganizer = user?.role === Role.ORGANIZER;
 
-  const role = session?.user?.role;
-  const menuGroups: SidebarGroup[] =
-    role === Role.ORGANIZER ? SIDEBAR_ITEMS.organizer : SIDEBAR_ITEMS.customer;
+  const menuGroups: SidebarGroup[] = isOrganizer
+    ? SIDEBAR_ITEMS.organizer
+    : SIDEBAR_ITEMS.customer;
 
   // --- Logic Tombol "Buat Event" / "Tiket Saya" ---
   const handleActionClick = () => {
     if (!isLoggedIn) {
       // Kondisi: Tidak login -> Redirect ke Login
       router.push("/login");
-    } else if (user?.role === Role.ORGANIZER) {
+    } else if (isOrganizer) {
       // Kondisi: Login Organizer -> Redirect ke Create Event
       router.push("/create-event");
     } else {
@@ -61,10 +61,13 @@ export default function Navbar() {
           <div className="flex items-center gap-6 flex-1">
             {/* Logo */}
             <Link href="/" className="shrink-0">
-              <div className="font-bold text-2xl tracking-tight flex items-center">
-                <span className="text-white">Evoria</span>
+              <div className="font-black text-xl text-white flex items-center gap-1">
+                <Ticket className="w-6 h-6 text-yellow-400" /> EVORIA
                 <span className="text-blue-500">.</span>
               </div>
+              {/* <div className="font-bold text-2xl tracking-tight flex items-center">
+                <span className="text-white">Evoria</span>
+              </div> */}
             </Link>
 
             {/* Search Bar */}
@@ -87,16 +90,16 @@ export default function Navbar() {
               {isLoggedIn && user?.role === Role.CUSTOMER ? (
                 // Kondisi: Login Customer -> Tombol Tiket Saya
                 <Link href="/member/tiket-saya">
-                  <button className="flex items-center gap-2 text-slate-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors cursor-pointer">
+                  <button className="flex items-center gap-2 text-slate-300 hover:text-yellow-400 px-3 py-2 text-sm font-medium transition-colors cursor-pointer">
                     <Ticket size={18} />
                     Tiket Saya
                   </button>
                 </Link>
               ) : (
-                // Kondisi Guest) & (Organizer) -> Tombol Buat Event
+                // Kondisi Guest & Organizer -> Tombol Buat Event
                 <button
                   onClick={handleActionClick}
-                  className="flex items-center gap-2 text-slate-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors cursor-pointer"
+                  className="flex items-center gap-2 text-slate-300 hover:text-yellow-400 px-3 py-2 text-sm font-medium transition-colors cursor-pointer"
                 >
                   <CalendarPlus size={18} />
                   Buat Event
@@ -106,7 +109,7 @@ export default function Navbar() {
 
             {/* Tombol Jelajah Event */}
             <Link href="/" className="hidden md:block">
-              <button className="flex items-center gap-2 text-slate-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors cursor-pointer">
+              <button className="flex items-center gap-2 text-slate-300 hover:text-yellow-400 px-3 py-2 text-sm font-medium transition-colors cursor-pointer">
                 <Compass size={18} />
                 Jelajah Event
               </button>
@@ -144,7 +147,7 @@ export default function Navbar() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 hover:bg-slate-800 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-slate-700"
                 >
-                  {/* ADD: Points Badge (BEFORE user menu) */}
+                  {/* Points Badge (before user menu) */}
                   <div className="hidden lg:block">
                     <PointsBadge
                       points={points}

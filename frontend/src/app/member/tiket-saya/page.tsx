@@ -314,7 +314,7 @@ const TicketDetailModal = ({
 
         {/* LEFT SIDE: Visual & Details */}
         <div className="w-full md:w-2/3 bg-white p-6 md:p-8 flex flex-col relative">
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex items-center gap-2 mb-4">
             <div className="font-black text-xl text-[#00388D] flex items-center gap-1">
               <Ticket className="w-6 h-6 text-yellow-400" /> EVORIA
             </div>
@@ -324,7 +324,7 @@ const TicketDetailModal = ({
             </span>
           </div>
 
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
             {transaction.event.name}
           </h2>
 

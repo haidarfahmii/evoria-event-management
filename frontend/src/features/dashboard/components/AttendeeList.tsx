@@ -1,21 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import {
-  Search,
-  Download,
-  Users,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
+import { Search, Download, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRupiah, formatDate } from "@/utils/formatters";
 import { Pagination } from "@/components/ui/shared/pagination";
 import useDebounce from "@/hooks/use-debounce";
+import useUrlState from "@/hooks/useUrlState"; // 1. Import hook
 
 // --- Types ---
 export interface AttendeeItem {
@@ -33,8 +26,7 @@ interface AttendeeListProps {
   loading: boolean;
 }
 
-// --- Helper Functions (Moved outside component) ---
-
+// Helper function exportToCSV
 const exportToCSV = (data: AttendeeItem[], eventName: string = "Event") => {
   const headers = [
     "No",
@@ -88,28 +80,46 @@ const exportToCSV = (data: AttendeeItem[], eventName: string = "Event") => {
   link.click();
   document.body.removeChild(link);
 
-  // FIX: Clean up memory
   setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
 export function AttendeeList({ attendees, loading }: AttendeeListProps) {
-  // State
-  const [searchInput, setSearchInput] = useState<string>("");
+  // Gunakan Hook
+  const { getParam, getParamAsNumber, setParam, setParams } = useUrlState();
+
+  // Init State dari URL
+  const urlSearch = getParam("search", "");
+  const urlPage = getParamAsNumber("page", 1);
+
+  const [searchInput, setSearchInput] = useState<string>(urlSearch);
   const debouncedSearch = useDebounce<string>(searchInput, 500);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(urlPage);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Sync State to URL
+  useEffect(() => {
+    // Cek agar tidak looping atau bentrok dengan tab lain (logic reset ada di parent handleTabChange)
+    if (debouncedSearch !== getParam("search")) {
+      setParams({ search: debouncedSearch, page: "1" });
+      setCurrentPage(1);
+    }
+  }, [debouncedSearch]);
+
+  // Handle URL change (misal browser back button)
+  useEffect(() => {
+    setSearchInput(urlSearch);
+    setCurrentPage(urlPage);
+  }, [urlSearch, urlPage]);
 
   // Filter Logic
   const filteredAttendees = useMemo(() => {
-    // Jika tidak ada search, kembalikan semua (optimization)
     if (!debouncedSearch) return attendees;
 
     const searchTerm = debouncedSearch.toLowerCase();
     return attendees.filter((attendee) => {
       const userName = attendee.userName?.toLowerCase() || "";
       const userEmail = attendee.userEmail?.toLowerCase() || "";
-      // Opsional: Cari juga berdasarkan Tipe Tiket
       const ticketType = attendee.ticketTypeName?.toLowerCase() || "";
 
       return (
@@ -123,10 +133,10 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
   // Pagination Logic
   const totalPages = Math.ceil(filteredAttendees.length / itemsPerPage);
 
-  // FIX: Auto-correct page number if out of bounds (misal: habis filter atau data berubah)
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
+      setParam("page", totalPages.toString());
     }
   }, [totalPages, currentPage]);
 
@@ -134,7 +144,7 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
   const endIndex = startIndex + itemsPerPage;
   const paginatedAttendees = filteredAttendees.slice(startIndex, endIndex);
 
-  // Stats Logic (Memoized untuk performa jika data besar)
+  // Stats Logic
   const stats = useMemo(() => {
     return {
       totalAttendees: filteredAttendees.length,
@@ -148,32 +158,22 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
-    setCurrentPage(1);
+    // Page reset handled by useEffect on debouncedSearch
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setParam("page", page.toString());
   };
 
   const handleExport = () => {
     if (filteredAttendees.length === 0) {
-      // Sebaiknya pakai Toast notification, tapi alert ok untuk sementara
       alert("Tidak ada data untuk di-export");
       return;
     }
     exportToCSV(filteredAttendees);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20 bg-white rounded-lg border border-slate-200">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-sm text-slate-500 animate-pulse">
-            Memuat data peserta...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Render Stats Cards
   const StatsCard = ({ title, value, sub, isCurrency = false }: any) => (
     <Card>
       <CardHeader className="pb-3">
@@ -190,8 +190,20 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
     </Card>
   );
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 bg-white rounded-lg border border-slate-200">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="text-sm text-slate-500 animate-pulse">
+            Memuat data peserta...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (attendees.length === 0 && !searchInput) {
-    // Empty state UI (tetap sama seperti punyamu)
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg border-dashed border-slate-300 bg-slate-50/50">
         <Users className="w-12 h-12 text-slate-300 mb-3" />
@@ -207,7 +219,6 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatsCard
           title="Total Peserta"
@@ -227,7 +238,6 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
         />
       </div>
 
-      {/* Attendee Table */}
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -330,7 +340,6 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
             </table>
           </div>
 
-          {/* Pagination Controls */}
           {filteredAttendees.length > 0 && (
             <Pagination
               className="mt-10"
@@ -338,7 +347,7 @@ export function AttendeeList({ attendees, loading }: AttendeeListProps) {
               itemsPerPage={itemsPerPage}
               totalItems={filteredAttendees.length}
               totalPages={totalPages}
-              onPageChange={(page) => setCurrentPage(page)}
+              onPageChange={handlePageChange}
               onItemsPerPageChange={(items) => setItemsPerPage(items)}
             />
           )}

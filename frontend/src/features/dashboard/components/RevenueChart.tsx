@@ -46,13 +46,7 @@ export function RevenueChart() {
         const chartData = Object.entries(rawData).map(([key, value]) => ({
           name: key,
           total: value as number,
-          // Add sort helper (extract day/month number)
-          // sortValue: extractSortValue(key, period),
         }));
-        // .sort((a, b) => a.sortValue - b.sortValue) // Sort by sortValue
-        // .map(({ name, total }) => ({ name, total })); // Remove sortValue from final data
-
-        // console.log(`[Frontend] Chart data:`, chartData);
 
         setData(chartData);
       } catch (error) {
@@ -66,37 +60,11 @@ export function RevenueChart() {
     fetchData();
   }, [period]);
 
-  // Helper function to extract numeric value for sorting
-  // const extractSortValue = (key: string, type: Period): number => {
-  //   if (type === "day" || type === "month") {
-  //     // Extract day number from "1 Des", "2 Des", etc.
-  //     const dayMatch = key.match(/^(\d+)/);
-  //     return dayMatch ? parseInt(dayMatch[1]) : 0;
-  //   } else {
-  //     // Extract month number from "Jan", "Feb", etc.
-  //     const monthMap: Record<string, number> = {
-  //       Jan: 1,
-  //       Feb: 2,
-  //       Mar: 3,
-  //       Apr: 4,
-  //       Mei: 5,
-  //       Jun: 6,
-  //       Jul: 7,
-  //       Agu: 8,
-  //       Sep: 9,
-  //       Okt: 10,
-  //       Nov: 11,
-  //       Des: 12,
-  //     };
-  //     return monthMap[key] || 0;
-  //   }
-  // };
-
   return (
     <Card className="col-span-4">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Revenue Overview</CardTitle>
+          <CardTitle>Tinjauan Pendapatan Visual</CardTitle>
           <CardDescription>
             Grafik pendapatan penjualan tiket Anda.
           </CardDescription>

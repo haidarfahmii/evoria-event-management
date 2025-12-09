@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Ticket } from "lucide-react";
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
@@ -74,10 +74,14 @@ export default function Sidebar() {
             </Link>
           ) : (
             <Link href="/">
-              <div className="font-bold text-2xl tracking-tight">
-                <span className="text-white">Evoria</span>
+              <div className="font-black text-xl text-white flex items-center gap-1">
+                <Ticket className="w-6 h-6 text-yellow-400" /> EVORIA
                 <span className="text-blue-500">.</span>
               </div>
+              {/* <div className="font-bold text-2xl tracking-tight">
+                <span className="text-white">Evoria</span>
+                <span className="text-blue-500">.</span>
+              </div> */}
             </Link>
           )}
         </div>
