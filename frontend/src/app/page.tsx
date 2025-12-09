@@ -12,6 +12,7 @@ export default function Home() {
 
   const { getParam, setParam } = useUrlState();
   const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // 1. Initialize State directly (Lazy Initialization)
   // This prevents the need for a separate useEffect just to set initial values
@@ -33,6 +34,8 @@ export default function Home() {
       setEvents(response?.data?.data || []);
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLoading(false)
     }
   };
 
@@ -82,6 +85,18 @@ export default function Home() {
     // Directly update URL here
     setParam("category", category === "All" ? "" : category);
   };
+
+  // loading condition
+  if (isLoading) {
+    return (
+      <main className="bg-slate-50 min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <p className="text-gray-500 font-medium">Loading Evoria...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main>
