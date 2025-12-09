@@ -3,6 +3,7 @@
 import { FiFilter, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import EventCard from "@/components/EventCard";
 import categoriesData from "@/data/categoriesData.json";
+import { useState } from "react";
 
 interface DiscoverySectionProps {
     events: any[];
@@ -28,10 +29,15 @@ export default function DiscoverySection({
     onClearFilters,
 }: DiscoverySectionProps) {
     const categories = categoriesData.categories;
+    const now = new Date();
+    
 
     // Filtering Logic
     const filteredEvents = events
         .filter((event) => {
+            const eventDate = new Date(event.endDate); // Use the actual event date field name
+            const isFutureOrPresent = eventDate.getTime() >= now.getTime();
+
             const matchesSearch =
                 event.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                 event.description?.toLowerCase().includes(debouncedSearch.toLowerCase());
@@ -42,10 +48,10 @@ export default function DiscoverySection({
                 selectedCategory === "All" ||
                 event.category.toLowerCase() === selectedCategory.toLowerCase();
 
-            return matchesSearch && matchesCity && matchesCat;
+            return isFutureOrPresent && matchesSearch && matchesCity && matchesCat;
         })
         .sort((a, b) => {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            return new Date(a.date).getTime() - new Date(b.date).getTime();
         });
 
     const totalItems = filteredEvents.length;
@@ -61,6 +67,8 @@ export default function DiscoverySection({
         }
     };
 
+    
+
     return (
         <section className="bg-slate-50 min-h-screen">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -74,8 +82,8 @@ export default function DiscoverySection({
                     <button
                         onClick={() => onCategoryChange("All")}
                         className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === "All"
-                                ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
-                                : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500"
+                            ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
+                            : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500"
                             }`}
                     >
                         All
@@ -85,8 +93,8 @@ export default function DiscoverySection({
                             key={cat}
                             onClick={() => onCategoryChange(cat)}
                             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === cat
-                                    ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
-                                    : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500"
+                                ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
+                                : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500"
                                 }`}
                         >
                             {cat}
@@ -131,9 +139,9 @@ export default function DiscoverySection({
                                         <button
                                             key={page}
                                             onClick={() => handlePageChange(page)}
-                                            className={`min-w-[40px] h-10 rounded-lg text-sm font-medium transition-all ${currentPage === page
-                                                    ? "bg-slate-900 text-white shadow-md"
-                                                    : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                                            className={`min-w-10 h-10 rounded-lg text-sm font-medium transition-all ${currentPage === page
+                                                ? "bg-slate-900 text-white shadow-md"
+                                                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                                                 }`}
                                         >
                                             {page}
