@@ -140,14 +140,14 @@ export const eventsService = {
     id: string,
     data: EventInput & { ticketTypes?: TicketTypeInput[] }
   ) {
+    // Remove undefined values untuk partial update
+    const { ticketTypes, ...eventData } = data;
+
+    const cleanEventData = Object.fromEntries(
+      Object.entries(eventData).filter(([_, value]) => value !== undefined)
+    );
+
     return await prisma.$transaction(async (tx) => {
-      const { ticketTypes, ...eventData } = data;
-
-      // Remove undefined values untuk partial update
-      const cleanEventData = Object.fromEntries(
-        Object.entries(eventData).filter(([_, value]) => value !== undefined)
-      );
-
       // Update event info only
       const event = await tx.event.update({
         where: { id },

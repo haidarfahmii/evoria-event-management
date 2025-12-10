@@ -54,6 +54,7 @@ interface Event {
   imageUrl?: string;
   venue?: string;
   startDate?: string;
+  endDate?: string;
 }
 
 interface Transaction {
@@ -177,16 +178,65 @@ const TicketDetailModal = ({
 
   if (!transaction) return null;
 
-  const displayDate = format(
-    new Date(transaction.event.startDate as string),
+  const transactionDate = format(
+    new Date(transaction.createdAt),
     "dd MMMM yyyy",
     {
       locale: idLocale,
     }
   );
-  const displayTime =
+  const transactionTime =
     format(new Date(transaction.createdAt), "HH:mm", { locale: idLocale }) +
     " WIB";
+
+  // 🆕 Event Date Range: startDate - endDate
+  const eventStartDate = new Date(transaction.event.startDate as string);
+
+  // Check if endDate exists
+  const eventEndDate = transaction.event.endDate
+    ? new Date(transaction.event.endDate as string)
+    : null;
+
+  // Format event date display
+  let eventDateDisplay = "";
+
+  if (eventEndDate) {
+    // Check if same day
+    const isSameDay =
+      eventStartDate.getDate() === eventEndDate.getDate() &&
+      eventStartDate.getMonth() === eventEndDate.getMonth() &&
+      eventStartDate.getFullYear() === eventEndDate.getFullYear();
+
+    if (isSameDay) {
+      // Same day: "15 Desember 2025"
+      eventDateDisplay = format(eventStartDate, "dd MMMM yyyy", {
+        locale: idLocale,
+      });
+    } else {
+      // Different days
+      const isSameMonth =
+        eventStartDate.getMonth() === eventEndDate.getMonth() &&
+        eventStartDate.getFullYear() === eventEndDate.getFullYear();
+
+      if (isSameMonth) {
+        // Same month: "15 - 17 Desember 2025"
+        eventDateDisplay = `${format(eventStartDate, "dd", {
+          locale: idLocale,
+        })} - ${format(eventEndDate, "dd MMMM yyyy", { locale: idLocale })}`;
+      } else {
+        // Different month: "30 Des - 02 Jan 2025"
+        eventDateDisplay = `${format(eventStartDate, "dd MMM", {
+          locale: idLocale,
+        })} - ${format(eventEndDate, "dd MMM yyyy", { locale: idLocale })}`;
+      }
+    }
+  } else {
+    // No endDate, just show startDate
+    eventDateDisplay = format(eventStartDate, "dd MMMM yyyy", {
+      locale: idLocale,
+    });
+  }
+
   const displayVenue = transaction.event.venue || "Venue TBA";
 
   // --- LOGIC UPLOAD ---
@@ -278,32 +328,48 @@ const TicketDetailModal = ({
             {transaction.event.name}
           </h2>
 
-          <div className="flex flex-col gap-6 mt-6">
-            <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+          <div className="flex flex-col gap-6">
+            {/* ROW 1: Tanggal Transaksi | Waktu Transaksi */}
+            <div className="grid grid-cols-2 gap-x-4">
               <div>
                 <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
-                  Tanggal Event
+                  Tanggal Transaksi
                 </p>
                 <div className="flex items-center gap-2 text-gray-800 font-semibold">
-                  <Calendar size={18} className="text-blue-600" /> {displayDate}
+                  <Calendar size={18} className="text-blue-600" />
+                  {transactionDate}
                 </div>
               </div>
               <div>
                 <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
-                  Waktu
+                  Waktu Transaksi
                 </p>
                 <div className="flex items-center gap-2 text-gray-800 font-semibold">
-                  <Clock size={18} className="text-blue-600" /> {displayTime}
+                  <Clock size={18} className="text-blue-600" />
+                  {transactionTime}
                 </div>
               </div>
-              <div className="col-span-2">
-                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
-                  Lokasi
-                </p>
-                <div className="flex items-start gap-2 text-gray-800 font-semibold">
-                  <MapPin size={18} className="text-blue-600 mt-0.5 shrink-0" />{" "}
-                  {displayVenue}
-                </div>
+            </div>
+
+            {/* ROW 2: Tanggal Event (with date range) */}
+            <div>
+              <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
+                Tanggal Event
+              </p>
+              <div className="flex items-center gap-2 text-gray-800 font-semibold">
+                <Calendar size={18} className="text-green-600" />
+                {eventDateDisplay}
+              </div>
+            </div>
+
+            {/* ROW 3: Lokasi Event */}
+            <div>
+              <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
+                Lokasi Event
+              </p>
+              <div className="flex items-start gap-2 text-gray-800 font-semibold">
+                <MapPin size={18} className="text-red-600 mt-0.5 shrink-0" />
+                {displayVenue}
               </div>
             </div>
 
