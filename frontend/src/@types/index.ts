@@ -51,6 +51,15 @@ export interface AuthResponse {
   };
 }
 
+export interface SwitchRoleResponse {
+  success: boolean;
+  message: string;
+  data: {
+    token: string;
+    user: User;
+  };
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;

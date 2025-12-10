@@ -12,6 +12,8 @@ import {
   LogOut,
   ChevronDown,
   CalendarPlus,
+  Loader2,
+  Ticket,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Role } from "@/@types";
@@ -19,6 +21,7 @@ import { useBreadcrumb } from "@/context/BreadcrumbContext";
 import { SIDEBAR_ITEMS, SidebarGroup } from "@/config/navigation";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import PointsBadge from "./PointsBadge";
+import { useSwitchRole } from "@/hooks/useSwitchRole";
 
 // Mapping path URL ke nama yang lebih user-friendly (Bahasa Indonesia)
 const pathLabels: Record<string, string> = {
@@ -37,6 +40,8 @@ export default function DashboardHeader() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
+
+  const { switchRole, isLoading: isSwitching } = useSwitchRole();
 
   // ambil label dinamis dari context
   const { labels } = useBreadcrumb();
@@ -153,8 +158,26 @@ export default function DashboardHeader() {
       </nav>
 
       {/* Mobile Title (When breadcrumbs hidden) */}
-      <div className="md:hidden font-semibold text-slate-800">
-        {breadcrumbs[breadcrumbs.length - 1]?.title || "Evoria"}
+      <div className="md:hidden flex items-center gap-3">
+        {/* 1. Tombol Kembali ke Home */}
+        <Link
+          href="/"
+          className="p-1.5 -ml-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+          title="Kembali ke Beranda"
+        >
+          <div className="font-black text-sm text-blue-800 flex items-center gap-1">
+            <Ticket className="w-3 h-3 text-yellow-400" /> EVORIA
+            <span className="text-blue-500">.</span>
+          </div>
+        </Link>
+
+        {/* Separator Tipis */}
+        <div className="h-4 w-px bg-slate-300"></div>
+
+        {/* 2. Judul Halaman Saat Ini */}
+        <div className="font-semibold text-slate-800 truncate max-w-[150px] sm:max-w-xs">
+          {breadcrumbs[breadcrumbs.length - 1]?.title || "Evoria"}
+        </div>
       </div>
 
       {/* Right: Actions */}
@@ -291,6 +314,33 @@ export default function DashboardHeader() {
                       <div className="px-2 space-y-1">
                         {group.items.map((item, itemIndex) => {
                           const Icon = item.icon;
+
+                          if (item.key === "switch_role") {
+                            return (
+                              <button
+                                key={itemIndex}
+                                onClick={() => {
+                                  setIsUserMenuOpen(false); // Tutup menu
+                                  switchRole(); // Panggil fungsi switch
+                                }}
+                                disabled={isSwitching}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-all text-slate-600 hover:bg-slate-50 hover:text-blue-600 font-medium text-left"
+                              >
+                                {isSwitching ? (
+                                  <Loader2
+                                    size={16}
+                                    className="animate-spin text-blue-600 shrink-0"
+                                  />
+                                ) : (
+                                  <Icon size={16} className="shrink-0" />
+                                )}
+                                <span className="truncate">
+                                  {isSwitching ? "Memproses..." : item.label}
+                                </span>
+                              </button>
+                            );
+                          }
+
                           const isActive =
                             pathname === item.href ||
                             pathname.startsWith(item.href + "/");

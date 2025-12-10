@@ -104,6 +104,17 @@ const nextAuthHandler = NextAuth({
           token.avatarUrl = session.avatarUrl;
           console.log("Token avatarUrl updated:", token.avatarUrl);
         }
+
+        // update role & token
+        if (session.role !== undefined) {
+          token.role = session.role;
+          console.log("Token role updated:", token.role);
+        }
+
+        if (session.accessToken !== undefined) {
+          token.accessToken = session.accessToken;
+          console.log("Token accessToken updated:", token.accessToken);
+        }
       }
 
       return token;

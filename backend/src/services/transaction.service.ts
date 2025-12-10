@@ -128,10 +128,14 @@ export const transactionService: ITransactionService = {
 
     const eventData = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { endDate: true },
+      select: { endDate: true, organizerId: true },
     });
 
     if (!eventData) throw AppError("Event not found", 404);
+
+    if (eventData.organizerId === userId) {
+      throw AppError("You cannot buy a ticket for your own event.", 403);
+    }
 
     if (new Date() < eventData.endDate) {
       const existingActiveTicket = await prisma.transaction.findFirst({
