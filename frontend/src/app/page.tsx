@@ -88,7 +88,7 @@ export default function Home() {
 
   return (
     <main>
-      {/* Hero section */}
+      {/* Hero Section */}
       <section className="bg-blue-200">
         <div className="max-w-6xl mx-auto flex flex-col gap-5 px-4 py-20">
           <h1 className="text-4xl font-bold">
@@ -99,25 +99,33 @@ export default function Home() {
             next adventure with Evoria.
           </h2>
 
-          {/* Search Bar */}
-          <div className="bg-white p-2 rounded-xl shadow-2xl max-w-3xl flex flex-col md:flex-row gap-2">
-            {/* Search Input */}
-            <div className="flex-1 relative">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+          {/* Search Bar Container */}
+          <div className="bg-white p-2 rounded-2xl shadow-xl border border-slate-100 max-w-3xl flex flex-col md:flex-row gap-0 md:items-center relative z-10">
+            {/* 1. Search Input Section */}
+            <div className="flex-1 relative flex items-center group">
+              <FiSearch className="absolute left-4 text-slate-400 w-5 h-5 group-focus-within:text-blue-600 transition-colors" />
               <Input
                 type="text"
-                placeholder="Search events, organizers, or venues..."
-                className="w-full pl-10 pr-4 py-3 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="Search events, organizers..."
+                // UI FIX: border-0, shadow-none, focus-visible:ring-0 to blend with container
+                className="w-full pl-11 pr-4 py-6 text-base border-0 shadow-none focus-visible:ring-0 placeholder:text-slate-400 bg-transparent rounded-xl"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
             </div>
 
-            {/* City Select */}
-            <div className="md:w-48 relative border-l border-slate-200 md:pl-2">
-              <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            {/* Divider - Hidden on mobile, visible on Desktop */}
+            <div className="hidden md:block w-px h-8 bg-slate-200 mx-2"></div>
+            {/* Horizontal Divider for Mobile */}
+            <div className="block md:hidden h-px w-full bg-slate-100 my-1"></div>
+
+            {/* 2. City Select Section */}
+            <div className="md:w-56 relative flex items-center group">
+              <FiMapPin className="absolute left-4 text-slate-400 w-5 h-5 group-focus-within:text-blue-600 transition-colors pointer-events-none" />
+
+              {/* UI FIX: appearance-none to remove ugly browser arrow */}
               <select
-                className="w-full pl-9 pr-4 py-3 rounded-lg text-slate-700 bg-transparent focus:outline-none cursor-pointer appearance-none"
+                className="w-full pl-11 pr-10 py-4 text-base bg-transparent border-none rounded-xl text-slate-700 focus:ring-0 focus:outline-none cursor-pointer appearance-none truncate"
                 value={selectedCity}
                 onChange={(e) => handleCityChange(e.target.value)}
               >
@@ -128,21 +136,39 @@ export default function Home() {
                   </option>
                 ))}
               </select>
+
+              {/* Custom Arrow Icon for Select */}
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg
+                  className="w-4 h-4 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
             </div>
 
-            {/* Button */}
-            <button className="bg-black hover:bg-primary-700 text-white px-8 py-3 rounded-lg font-medium transition-colors shadow-lg md:w-auto w-full">
-              Find
-            </button>
+            {/* 3. Find Button */}
+            <div className="p-1">
+              <button className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-xl font-semibold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2">
+                Find
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Discovery Event Section */}
-      <section>
-        {/* Event Filter Category */}
-        <div className="max-w-6xl mx-auto px- sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-wrap gap-2 items-center">
+      {/* Discovery Section */}
+      <section className="bg-slate-50 min-h-screen">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-wrap gap-2 items-center mb-8">
             <div className="mr-2 text-slate-500 flex items-center text-sm font-medium">
               <FiFilter className="w-4 h-4 mr-1" />
               Filter by:
@@ -152,12 +178,11 @@ export default function Home() {
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                 selectedCategory === "All"
                   ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
-                  : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
+                  : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500"
               }`}
             >
               All
             </button>
-
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -165,7 +190,7 @@ export default function Home() {
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                   selectedCategory === cat
                     ? "bg-slate-900 text-white shadow-md hover:bg-slate-800"
-                    : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500 hover:text-primary-600"
+                    : "bg-white text-slate-600 border border-slate-200 hover:text-blue-700 hover:border-blue-500"
                 }`}
               >
                 {cat}

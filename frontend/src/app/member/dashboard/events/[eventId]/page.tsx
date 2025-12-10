@@ -38,6 +38,7 @@ import { StatusBadge } from "@/components/ui/shared/statusBadge";
 import { Pagination } from "@/components/ui/shared/pagination";
 import { AttendeeList } from "@/features/dashboard/components/AttendeeList";
 import useDebounce from "@/hooks/use-debounce";
+import useUrlState from "@/hooks/useUrlState";
 
 export default function EventReportPage() {
   const router = useRouter();
@@ -45,25 +46,33 @@ export default function EventReportPage() {
   const eventId = params.eventId as string;
 
   const { setLabel } = useBreadcrumb();
+  // Panggil hook useUrlState
+  const { getParam, getParamAsNumber, setParam, setParams } = useUrlState();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const [activeTab, setActiveTab] = useState<TabId>("transactions");
+  // Init State dari URL
+  const urlTab = getParam("tab", "transactions") as TabId;
+  const urlSearch = getParam("search", "");
+  const urlStatus = getParam("status", "ALL") as TransactionStatus | "ALL";
+  const urlPage = getParamAsNumber("page", 1);
+
+  const [activeTab, setActiveTab] = useState<TabId>(urlTab);
 
   const [attendees, setAttendees] = useState<AttendeeItem[]>([]);
   const [attendeesLoading, setAttendeesLoading] = useState<boolean>(false);
 
-  // filter state
-  const [searchInput, setSearchInput] = useState<string>("");
+  // Filter state (Transactions)
+  const [searchInput, setSearchInput] = useState<string>(urlSearch);
   const debouncedSearch = useDebounce<string>(searchInput, 500);
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "ALL">(
-    "ALL"
+    urlStatus
   );
 
-  // pagination state
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  // Pagination state (Transactions)
+  const [currentPage, setCurrentPage] = useState<number>(urlPage);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
 
   // Modal Verification State
@@ -72,13 +81,59 @@ export default function EventReportPage() {
   const [rejectReason, setRejectReason] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-  // Load Data (Transactions + Attendees)
+  // --- Sync URL Effects ---
+
+  // Effect: Sync Search ke URL (Hanya jika di tab transactions)
+  useEffect(() => {
+    if (
+      activeTab === "transactions" &&
+      debouncedSearch !== getParam("search")
+    ) {
+      setParams({ search: debouncedSearch, page: "1" });
+      setCurrentPage(1);
+    }
+  }, [debouncedSearch, activeTab]); // Hapus dependency getParam/setParams untuk hindari loop
+
+  // Effect: Handle Back/Forward Browser Navigation
+  useEffect(() => {
+    setSearchInput(urlSearch);
+    setStatusFilter(urlStatus);
+    setCurrentPage(urlPage);
+    setActiveTab(urlTab);
+  }, [urlSearch, urlStatus, urlPage, urlTab]);
+
+  // Handler Ganti Tab (Reset filter saat pindah tab)
+  const handleTabChange = (tab: TabId) => {
+    setActiveTab(tab);
+    // Reset semua param filter ketika pindah tab agar bersih
+    setParams({
+      tab: tab,
+      search: "",
+      status: "ALL",
+      page: "1",
+    });
+    setSearchInput("");
+  };
+
+  // Handler Filter Status
+  const handleStatusFilterChange = (status: TransactionStatus | "ALL") => {
+    setStatusFilter(status);
+    setParams({ status: status, page: "1" });
+    setCurrentPage(1);
+  };
+
+  // Handler Pagination
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setParam("page", page.toString());
+  };
+
+  // --- Data Fetching ---
   const fetchData = async () => {
     if (!eventId) return;
     try {
       setLoading(true);
 
-      // Fetch event data dan transactions (existing)
       const [eventsData, trxData] = await Promise.all([
         eventService.getOrganizerEvents(),
         dashboardService.getEventTransactions(eventId),
@@ -90,7 +145,6 @@ export default function EventReportPage() {
         setLabel(eventId, currentEvent.name);
       }
 
-      // Pastikan trxData adalah array
       setTransactions(Array.isArray(trxData) ? trxData : []);
     } catch (error) {
       console.error("Error loading report:", error);
@@ -107,7 +161,6 @@ export default function EventReportPage() {
       setAttendeesLoading(true);
       const data = await dashboardService.getEventAttendees(eventId);
 
-      // Transform data untuk AttendeeList component
       const transformedData: any = data.map((item) => ({
         id: item.id,
         userName: item.userName,
@@ -131,10 +184,6 @@ export default function EventReportPage() {
     fetchData();
     fetchAttendees();
   }, [eventId]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, statusFilter, itemsPerPage]);
 
   const handleVerify = async (action: "ACCEPT" | "REJECT") => {
     if (!selectedTrx) return;
@@ -181,11 +230,11 @@ export default function EventReportPage() {
     ).length,
   };
 
-  // Filter Logic
+  // Filter Logic (Transactions)
   const filteredData = transactions.filter((t) => {
-    // Safety check: pastikan nilai string tidak null/undefined
     const userName = t.userName || "";
     const invoiceId = t.invoiceId || "";
+    // Gunakan debouncedSearch dari state yang sudah tersinkron dengan URL
     const searchTerm = debouncedSearch.toLowerCase();
 
     const matchesSearch =
@@ -197,7 +246,7 @@ export default function EventReportPage() {
     return matchesSearch && matchesStatus;
   });
 
-  // logic pagination
+  // Logic Pagination (Transactions)
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -230,7 +279,11 @@ export default function EventReportPage() {
     <div className="space-y-6 max-w-7xl mx-auto pb-20">
       {/* Header Section */}
       <div className="flex items-center gap-4 border-b border-slate-200 pb-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/member/events")}
+        >
           <ArrowLeft className="w-5 h-5 text-slate-600" />
         </Button>
         <div>
@@ -320,14 +373,14 @@ export default function EventReportPage() {
         <TabNavigation
           tabs={tabs}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
         />
 
         {/* Tab Content - Conditional Rendering */}
         <div className="p-6">
           {activeTab === "transactions" ? (
             /* TAB TRANSACTIONS */
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {/* Search & Filter */}
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
@@ -344,7 +397,9 @@ export default function EventReportPage() {
                   className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
                   value={statusFilter}
                   onChange={(e) =>
-                    setStatusFilter(e.target.value as TransactionStatus | "ALL")
+                    handleStatusFilterChange(
+                      e.target.value as TransactionStatus | "ALL"
+                    )
                   }
                 >
                   <option value="ALL">Semua Status</option>
@@ -457,14 +512,19 @@ export default function EventReportPage() {
                   itemsPerPage={itemsPerPage}
                   totalItems={filteredData.length}
                   totalPages={totalPages}
-                  onPageChange={(page) => setCurrentPage(page)}
+                  onPageChange={handlePageChange}
                   onItemsPerPageChange={(items) => setItemsPerPage(items)}
                 />
               )}
             </div>
           ) : (
-            /* TAB ATTENDEES */
-            <AttendeeList attendees={attendees} loading={attendeesLoading} />
+            /* TAB ATTENDEES (Component Terpisah) */
+            /* Key ditambahkan agar component me-remount saat tab aktif, membaca URL baru yang sudah direset */
+            <AttendeeList
+              key="attendees-tab"
+              attendees={attendees}
+              loading={attendeesLoading}
+            />
           )}
         </div>
       </Card>
@@ -485,6 +545,7 @@ export default function EventReportPage() {
               </button>
             </div>
             <div className="p-6 overflow-y-auto">
+              {/* ... content modal ... */}
               <div className="mb-6">
                 <p className="text-sm text-slate-500 mb-2">Bukti Transfer:</p>
                 <div className="relative w-full h-64 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden">
