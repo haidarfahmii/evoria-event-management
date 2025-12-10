@@ -310,6 +310,50 @@ export const authService = {
     }
   },
 
+  async switchRole(userId: string) {
+    // cari user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw AppError("User not found", 404);
+    }
+
+    // logika toggle role
+    const newRole = user.role === "CUSTOMER" ? "ORGANIZER" : "CUSTOMER";
+
+    // update database
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole },
+    });
+
+    // generate token baru
+    const newToken = await createToken(
+      {
+        userId: updatedUser.id,
+        role: updatedUser.role,
+        email: updatedUser.email,
+      },
+      JWT_SECRET_KEY_AUTH!,
+      {
+        expiresIn: "1d",
+      }
+    );
+
+    return {
+      token: newToken,
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        avatarUrl: updatedUser.avatarUrl,
+      },
+    };
+  },
+
   // helper to get client IP
   getClientIp(req: Request): string {
     const forwarded = req.headers["x-forwarded-for"];

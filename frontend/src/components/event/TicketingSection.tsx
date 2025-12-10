@@ -1,6 +1,7 @@
 "use client";
 import { MdAdd, MdRemove, MdConfirmationNumber } from "react-icons/md";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import CouponWidget, { CouponData, CouponResult } from "./CouponWidget";
 import PromotionWidget, { PromotionResult } from "./PromotionWidget";
 import PointWidget from "./PointWidget";
@@ -20,6 +21,7 @@ interface TicketType {
 interface TicketingSectionProps {
   ticketTypes: TicketType[];
   eventId: string;
+  organizerId: string;
 }
 
 interface CheckoutPayload {
@@ -35,8 +37,11 @@ interface CheckoutPayload {
 export default function TicketingSection({
   ticketTypes,
   eventId,
+  organizerId,
 }: TicketingSectionProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // State for ticket selection
@@ -147,6 +152,8 @@ export default function TicketingSection({
     setPointUsed(amount);
   };
 
+  const isOwner = session?.user?.id === organizerId;
+
   const handleCheckout = async () => {
     // Prevent double submit
     if (isSubmitting) return;
@@ -177,7 +184,7 @@ export default function TicketingSection({
 
       // // 1. POST ke API
       const response = await axiosInstance.post(`/transactions`, payload);
-      toast.success("Successfully Buy Ticket")
+      toast.success("Successfully Buy Ticket");
       router.push("/member/tiket-saya");
     } catch (error: any) {
       console.error("Checkout Failed:", error);
@@ -185,7 +192,7 @@ export default function TicketingSection({
       // Tampilkan error (Bisa ganti pakai Toast / Alert)
       const errorMsg =
         error.response?.data?.message || "Terjadi kesalahan saat checkout.";
-      toast.error(errorMsg)
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -215,31 +222,35 @@ export default function TicketingSection({
                   onClick={() => handleTicketSelect(ticket.id)}
                   disabled={ticket.seats === 0}
                   className={`relative flex justify-between items-center p-4 rounded-xl border-2 text-left transition-all duration-200 group
-                                ${selectedTicketId === ticket.id
-                      ? "border-blue-600 bg-blue-50/30 ring-1 ring-blue-600"
-                      : "border-gray-100 hover:border-blue-300 bg-white"
-                    }
-                                ${ticket.seats === 0
-                      ? "opacity-50 cursor-not-allowed grayscale"
-                      : ""
-                    }
+                                ${
+                                  selectedTicketId === ticket.id
+                                    ? "border-blue-600 bg-blue-50/30 ring-1 ring-blue-600"
+                                    : "border-gray-100 hover:border-blue-300 bg-white"
+                                }
+                                ${
+                                  ticket.seats === 0
+                                    ? "opacity-50 cursor-not-allowed grayscale"
+                                    : ""
+                                }
                                 `}
                 >
                   <div>
                     <span
-                      className={`font-bold block ${selectedTicketId === ticket.id
-                        ? "text-blue-700"
-                        : "text-gray-700"
-                        }`}
+                      className={`font-bold block ${
+                        selectedTicketId === ticket.id
+                          ? "text-blue-700"
+                          : "text-gray-700"
+                      }`}
                     >
                       {ticket.name}
                     </span>
                     {ticket.seats > 0 ? (
                       <span
-                        className={`text-xs ${ticket.seats < 20
-                          ? "text-red-500 font-medium"
-                          : "text-gray-500"
-                          }`}
+                        className={`text-xs ${
+                          ticket.seats < 20
+                            ? "text-red-500 font-medium"
+                            : "text-gray-500"
+                        }`}
                       >
                         {ticket.seats} seats available
                       </span>
@@ -397,11 +408,12 @@ export default function TicketingSection({
             {/* Checkout Button */}
             <button
               onClick={handleCheckout}
-              disabled={isSoldOut || isSubmitting}
+              disabled={isSoldOut || isSubmitting || isOwner}
               className={`w-full font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] 
-                ${isSoldOut || isSubmitting
-                  ? "bg-gray-300 cursor-not-allowed shadow-none text-gray-500"
-                  : "bg-blue-600 hover:bg-blue-700 hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] active:scale-[0.98] text-white"
+                ${
+                  isSoldOut || isSubmitting || isOwner
+                    ? "bg-gray-300 cursor-not-allowed shadow-none text-gray-500"
+                    : "bg-blue-600 hover:bg-blue-700 hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] active:scale-[0.98] text-white"
                 } flex justify-center items-center gap-2`}
             >
               {isSubmitting ? (
@@ -409,6 +421,8 @@ export default function TicketingSection({
                   <ImSpinner8 className="animate-spin text-xl" />
                   Processing...
                 </>
+              ) : isOwner ? (
+                "You are the organizer"
               ) : isSoldOut ? (
                 "Tickets Sold Out"
               ) : (

@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { authService } from "../services/auth.service";
+import prisma from "../config/prisma.config";
+import { createToken } from "../utils/jwt.util";
+import { JWT_SECRET_KEY_AUTH } from "../config/index.config";
 
 export const authController = {
   async register(req: Request, res: Response) {
@@ -68,6 +71,27 @@ export const authController = {
     res.status(200).json({
       success: true,
       message: "Password has been reset successfully. You can now login.",
+    });
+  },
+
+  async switchRole(req: Request, res: Response) {
+    // Ambil userId dari token (disimpan di res.locals oleh middleware verifyToken)
+    const { userId } = res?.locals?.payload;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    // panggil service
+    const result = await authService.switchRole(userId);
+
+    res.status(200).json({
+      success: true,
+      message: `Switched to ${result.user.role} mode successfully`,
+      data: result,
     });
   },
 };

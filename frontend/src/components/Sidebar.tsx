@@ -2,6 +2,7 @@
 
 import { Role } from "@/@types";
 import { SIDEBAR_ITEMS, SidebarGroup } from "@/config/navigation";
+import SidebarSwitchButton from "./SidebarSwitchButton";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -99,6 +100,16 @@ export default function Sidebar() {
 
               <div className="space-y-1">
                 {group.items.map((item, itemIndex) => {
+                  if (item.key === "switch_role") {
+                    return (
+                      <SidebarSwitchButton
+                        key={itemIndex}
+                        label={item.label}
+                        icon={item.icon}
+                        isCollapsed={isCollapsed}
+                      />
+                    );
+                  }
                   // Cek active state:
                   // 1. Exact match
                   // 2. Starts with (untuk sub-halaman), kecuali root '/' agar tidak selalu aktif

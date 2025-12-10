@@ -14,6 +14,7 @@ export interface SidebarItem {
   label: string;
   href: string;
   icon: any;
+  key?: string;
 }
 
 // tipe untuk group menu
@@ -23,7 +24,10 @@ export interface SidebarGroup {
 }
 
 // struktur menu navigasi
-export const SIDEBAR_ITEMS = {
+export const SIDEBAR_ITEMS: {
+  customer: SidebarGroup[];
+  organizer: SidebarGroup[];
+} = {
   customer: [
     {
       group: "Menu Utama",
@@ -47,16 +51,17 @@ export const SIDEBAR_ITEMS = {
         },
       ],
     },
-    // {
-    //   group: "Mode User",
-    //   items: [
-    //     {
-    //       label: "Beralih ke Organizer",
-    //       href: "/member/dashboard",
-    //       icon: FiRepeat,
-    //     },
-    //   ],
-    // },
+    {
+      group: "Mode User",
+      items: [
+        {
+          label: "Beralih ke Organizer",
+          href: "#",
+          icon: FiRepeat,
+          key: "switch_role",
+        },
+      ],
+    },
   ],
   organizer: [
     {
@@ -82,15 +87,16 @@ export const SIDEBAR_ITEMS = {
         },
       ],
     },
-    // {
-    //   group: "Mode User",
-    //   items: [
-    //     {
-    //       label: "Beralih ke Pembeli",
-    //       href: "/member/tiket-saya",
-    //       icon: FiRepeat,
-    //     },
-    //   ],
-    // },
+    {
+      group: "Mode User",
+      items: [
+        {
+          label: "Beralih ke Pembeli",
+          href: "#",
+          icon: FiRepeat,
+          key: "switch_role",
+        },
+      ],
+    },
   ],
 };

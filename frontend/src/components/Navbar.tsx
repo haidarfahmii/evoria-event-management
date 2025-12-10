@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Home,
   Settings,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ import { Role } from "@/@types";
 import { useState } from "react";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import PointsBadge from "./PointsBadge";
+import { useSwitchRole } from "@/hooks/useSwitchRole";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -30,6 +32,8 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
 
   const { points, loading: pointsLoading } = useUserPoints();
+
+  const { switchRole, isLoading: isSwitching } = useSwitchRole();
 
   const user = session?.user;
   const isLoggedIn = status === "authenticated";
@@ -246,6 +250,35 @@ export default function Navbar() {
                             <div className="px-2 space-y-1">
                               {group.items.map((item, itemIndex) => {
                                 const Icon = item.icon;
+
+                                if (item.key === "switch_role") {
+                                  return (
+                                    <button
+                                      key={itemIndex}
+                                      onClick={() => {
+                                        setIsUserMenuOpen(false); // Tutup menu
+                                        switchRole(); // Panggil fungsi switch
+                                      }}
+                                      disabled={isSwitching}
+                                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-all text-slate-600 hover:bg-slate-50 hover:text-blue-600 font-medium text-left"
+                                    >
+                                      {isSwitching ? (
+                                        <Loader2
+                                          size={16}
+                                          className="animate-spin text-blue-600 shrink-0"
+                                        />
+                                      ) : (
+                                        <Icon size={16} className="shrink-0" />
+                                      )}
+                                      <span className="truncate">
+                                        {isSwitching
+                                          ? "Memproses..."
+                                          : item.label}
+                                      </span>
+                                    </button>
+                                  );
+                                }
+
                                 const isActive =
                                   pathname === item.href ||
                                   pathname.startsWith(item.href + "/");
