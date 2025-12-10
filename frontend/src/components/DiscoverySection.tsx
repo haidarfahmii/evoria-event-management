@@ -51,7 +51,7 @@ export default function DiscoverySection({
             return isFutureOrPresent && matchesSearch && matchesCity && matchesCat;
         })
         .sort((a, b) => {
-            return new Date(a.date).getTime() - new Date(b.date).getTime();
+            return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
         });
 
     const totalItems = filteredEvents.length;
