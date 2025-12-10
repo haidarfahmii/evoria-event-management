@@ -69,9 +69,6 @@ export default function Navbar() {
                 <Ticket className="w-6 h-6 text-yellow-400" /> EVORIA
                 <span className="text-blue-500">.</span>
               </div>
-              {/* <div className="font-bold text-2xl tracking-tight flex items-center">
-                <span className="text-white">Evoria</span>
-              </div> */}
             </Link>
 
             {/* Search Bar */}

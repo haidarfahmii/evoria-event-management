@@ -138,7 +138,7 @@ export default function EditEventForm({ event, eventId }: EditEventFormProps) {
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
           />
           <input
-            type="date"
+            type="datetime-local"
             name="startDate"
             value={formik.values.startDate}
             onChange={formik.handleChange}
@@ -166,7 +166,7 @@ export default function EditEventForm({ event, eventId }: EditEventFormProps) {
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
           />
           <input
-            type="date"
+            type="datetime-local"
             name="endDate"
             value={formik.values.endDate}
             onChange={formik.handleChange}
