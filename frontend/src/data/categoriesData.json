@@ -1,9 +1,14 @@
 {
   "categories": [
-    "Concert",
-    "Seminar",
-    "Workshop",
-    "Festival",
-    "Sport"
+    "Music & Concert",
+    "Conference & Seminar",
+    "Workshop & Training",
+    "Technology & Startup",
+    "Sports & Competition",
+    "Festival & Exhibition",
+    "Arts & Culture",
+    "Community & Social",
+    "Business & Networking",
+    "Education & Campus Event"
   ]
 }
