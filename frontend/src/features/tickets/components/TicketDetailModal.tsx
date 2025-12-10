@@ -61,7 +61,8 @@ export const TicketDetailModal = ({
     : null;
 
   // Format event date display
-  let eventDateDisplay = "";
+  let eventDateRow = "";
+  let eventTimeRow = "";
 
   if (eventEndDate) {
     // Check if same day
@@ -71,33 +72,31 @@ export const TicketDetailModal = ({
       eventStartDate.getFullYear() === eventEndDate.getFullYear();
 
     if (isSameDay) {
-      // Same day: "15 Desember 2025"
-      eventDateDisplay = format(eventStartDate, "dd MMMM yyyy", {
+      // Tanggal: 15 Desember 2025
+      eventDateRow = format(eventStartDate, "dd MMMM yyyy", {
         locale: idLocale,
       });
+      // Waktu: 19:00 - 22:00 WIB
+      const startTime = format(eventStartDate, "HH:mm", { locale: idLocale });
+      const endTime = format(eventEndDate, "HH:mm", { locale: idLocale });
+      eventTimeRow = `${startTime} - ${endTime} WIB`;
     } else {
-      // Different days
-      const isSameMonth =
-        eventStartDate.getMonth() === eventEndDate.getMonth() &&
-        eventStartDate.getFullYear() === eventEndDate.getFullYear();
+      // Beda Hari:
+      // Tanggal: 15 Des - 17 Des 2025
+      eventDateRow = `${format(eventStartDate, "dd MMM", {
+        locale: idLocale,
+      })} - ${format(eventEndDate, "dd MMM yyyy", { locale: idLocale })}`;
 
-      if (isSameMonth) {
-        // Same month: "15 - 17 Desember 2025"
-        eventDateDisplay = `${format(eventStartDate, "dd", {
-          locale: idLocale,
-        })} - ${format(eventEndDate, "dd MMMM yyyy", { locale: idLocale })}`;
-      } else {
-        // Different month: "30 Des - 02 Jan 2025"
-        eventDateDisplay = `${format(eventStartDate, "dd MMM", {
-          locale: idLocale,
-        })} - ${format(eventEndDate, "dd MMM yyyy", { locale: idLocale })}`;
-      }
+      // Waktu: 10:00 - 18:00 WIB
+      const startTime = format(eventStartDate, "HH:mm", { locale: idLocale });
+      const endTime = format(eventEndDate, "HH:mm", { locale: idLocale });
+      eventTimeRow = `${startTime} - ${endTime} WIB`;
     }
   } else {
-    // No endDate, just show startDate
-    eventDateDisplay = format(eventStartDate, "dd MMMM yyyy", {
-      locale: idLocale,
-    });
+    // Start only
+    eventDateRow = format(eventStartDate, "dd MMMM yyyy", { locale: idLocale });
+    eventTimeRow =
+      format(eventStartDate, "HH:mm", { locale: idLocale }) + " WIB";
   }
 
   const displayVenue = transaction.event.venue || "Venue TBA";
@@ -209,14 +208,25 @@ export const TicketDetailModal = ({
               </div>
             </div>
 
-            {/* ROW 2: Tanggal Event (with date range) */}
-            <div>
-              <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
-                Tanggal Event
-              </p>
-              <div className="flex items-center gap-2 text-gray-800 font-semibold">
-                <Calendar size={18} className="text-green-600" />
-                {eventDateDisplay}
+            {/* ROW 2: Tanggal Event | Waktu Event (MODIFIKASI: Layout Grid) */}
+            <div className="grid grid-cols-2 gap-x-4">
+              <div>
+                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
+                  Tanggal Event
+                </p>
+                <div className="flex items-center gap-2 text-gray-800 font-semibold">
+                  <Calendar size={18} className="text-green-600" />
+                  {eventDateRow}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
+                  Waktu Event
+                </p>
+                <div className="flex items-center gap-2 text-gray-800 font-semibold">
+                  <Clock size={18} className="text-green-600" />
+                  {eventTimeRow}
+                </div>
               </div>
             </div>
 

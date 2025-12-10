@@ -119,7 +119,7 @@ export default function CouponWidget({
         <div className="flex items-center gap-2">
           <MdCheckCircle className="text-green-600 text-xl" />
           <div>
-            <p className="text-xs text-green-800 font-bold">Kupon Digunakan</p>
+            <p className="text-xs text-green-800 font-bold">Coupon Used</p>
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold text-green-700">
                 {appliedCoupon.code}
@@ -143,7 +143,7 @@ export default function CouponWidget({
   return (
     <div className="space-y-2">
       <label className="text-xs font-semibold text-gray-500 tracking-wide flex items-center gap-1">
-        <MdLocalOffer className="text-green-600" /> Punya Kupon Diskon?
+        <MdLocalOffer className="text-green-600" /> Have a Discount Coupon?
       </label>
 
       {availableCoupons.length === 0 && !isLoading && !error && (
@@ -151,14 +151,14 @@ export default function CouponWidget({
           onClick={fetchCoupons}
           className="w-full bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 font-medium text-sm py-2.5 px-4 rounded-lg transition-colors"
         >
-          Lihat Kupon Tersedia
+          View Available Coupons
         </button>
       )}
 
       {isLoading && (
         <div className="flex items-center justify-center py-3 text-gray-500 text-sm">
           <ImSpinner8 className="animate-spin mr-2" />
-          Memuat kupon...
+          Loading coupon...
         </div>
       )}
 
@@ -181,15 +181,15 @@ export default function CouponWidget({
                   {coupon.code}
                 </p>
                 <p className="text-xs text-green-600">
-                  Diskon {coupon.percentage}%
+                  Discount {coupon.percentage}%
                 </p>
                 <p className="text-[10px] text-gray-500">
-                  Berlaku hingga{" "}
+                  Valid until{" "}
                   {new Date(coupon.expiresAt).toLocaleDateString("id-ID")}
                 </p>
               </div>
               <span className="text-green-600 text-xs font-semibold group-hover:text-green-700">
-                Pakai →
+                Use →
               </span>
             </button>
           ))}
@@ -197,7 +197,7 @@ export default function CouponWidget({
       )}
 
       <p className="text-[10px] text-gray-400 mt-1">
-        💡 Kupon hanya bisa digunakan 1x per transaksi
+        💡 Coupon can only be used 1x per transaction
       </p>
     </div>
   );

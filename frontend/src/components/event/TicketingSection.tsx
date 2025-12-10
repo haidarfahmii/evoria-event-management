@@ -2,7 +2,7 @@
 import { MdAdd, MdRemove, MdConfirmationNumber } from "react-icons/md";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import CouponWidget, { CouponData, CouponResult } from "./CouponWidget";
+import CouponWidget, { CouponResult } from "./CouponWidget";
 import PromotionWidget, { PromotionResult } from "./PromotionWidget";
 import PointWidget from "./PointWidget";
 import { useRouter } from "next/navigation";
@@ -30,7 +30,7 @@ interface CheckoutPayload {
   qty: number;
   pointsUsed?: number;
   totalPrice: number;
-  couponId?: string; // Tanda tanya (?) berarti boleh ada, boleh tidak
+  couponId?: string;
   promotionId?: string;
 }
 
@@ -363,10 +363,10 @@ export default function TicketingSection({
                 </div>
               )}
 
-              {/* ⭐ Promotion Discount */}
+              {/* Promotion Discount */}
               {appliedPromotion && (
                 <div className="flex justify-between text-sm text-purple-600 font-medium">
-                  <span>Diskon Promo ({appliedPromotion.promotionCode})</span>
+                  <span>Promo Discount ({appliedPromotion.promotionCode})</span>
                   <span>- {formatRupiah(appliedPromotion.discountAmount)}</span>
                 </div>
               )}
@@ -374,7 +374,7 @@ export default function TicketingSection({
               {/* Coupon Discount */}
               {discount > 0 && (
                 <div className="flex justify-between text-sm text-green-600 font-medium">
-                  <span>Diskon Kupon ({appliedCouponCode})</span>
+                  <span>Discount Coupon ({appliedCouponCode})</span>
                   <span>- {formatRupiah(discount)}</span>
                 </div>
               )}
@@ -382,7 +382,7 @@ export default function TicketingSection({
               {/* Points Redeemed */}
               {pointUsed > 0 && (
                 <div className="flex justify-between text-sm text-amber-600 font-medium">
-                  <span>Poin Digunakan</span>
+                  <span>Points Used</span>
                   <span>- {formatRupiah(pointUsed)}</span>
                 </div>
               )}
@@ -390,7 +390,7 @@ export default function TicketingSection({
               {/* Total Payment */}
               <div className="flex justify-between items-end pt-3 border-t border-gray-200">
                 <span className="text-sm text-gray-600 font-semibold">
-                  Total Pembayaran
+                  Total Payment
                 </span>
                 <div className="text-right">
                   <span className="block text-2xl font-extrabold text-blue-600 leading-none">

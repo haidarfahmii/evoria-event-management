@@ -13,4 +13,4 @@ export const createReviewValidationSchema = yup.object().shape({
     .typeError("Rating must be a number")
     .min(1, "Rating must be at least 1")
     .max(10, "Rating cannot exceed 10"),
-})
+});
