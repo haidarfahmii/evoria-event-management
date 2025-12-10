@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { eventFormValidationSchema } from "../schemas/eventsSchema";
 import { eventService } from "../services/event.service";
 import { toast } from "react-toastify";
+import { formatDateTimeForInput } from "@/utils/formatters";
 
 interface TicketType {
   id: number | string;
@@ -28,13 +29,6 @@ interface EventFormValues {
 export default function useEditEventForm(event: any, eventId: string) {
   const router = useRouter();
 
-  // Format dates untuk input type="date" (YYYY-MM-DD)
-  const formatDateForInput = (dateString: string) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
-  };
-
   // Transform ticket types untuk initial values
   const transformTicketTypes = (ticketTypes: any[]) => {
     return ticketTypes.map((ticket) => ({
@@ -47,8 +41,8 @@ export default function useEditEventForm(event: any, eventId: string) {
 
   const initialValues: EventFormValues = {
     name: event.name || "",
-    startDate: formatDateForInput(event.startDate) || "",
-    endDate: formatDateForInput(event.endDate) || "",
+    startDate: formatDateTimeForInput(event.startDate) || "",
+    endDate: formatDateTimeForInput(event.endDate) || "",
     city: event.city || "",
     venue: event.venue || "",
     category: event.category || "",

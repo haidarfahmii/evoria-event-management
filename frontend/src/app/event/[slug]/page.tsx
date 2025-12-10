@@ -1,10 +1,12 @@
 "use client";
+
 import { MdOutlineDateRange, MdLocationOn } from "react-icons/md";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import TicketingSection from "@/components/event/TicketingSection";
 import ReviewSection from "@/components/event/ReviewSection";
+import { formatEventRange } from "@/utils/formatters";
 
 interface TicketType {
   id: string;
@@ -36,6 +38,18 @@ interface EventData {
 interface Params {
   slug: string;
 }
+
+// Helper formatting di dalam komponen (bisa ditaruh di luar component)
+const formatEventDate = (date: Date) => {
+  return date.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short", // Akan menampilkan "WIB"
+  });
+};
 
 // Fetching Function
 const getEventDetail = async (slug: string) => {
@@ -106,16 +120,13 @@ export default function EventDetailPage({
     );
   }
 
-  // show one date when similar
-  const startDate = new Date(event.startDate);
-  const endDate = new Date(event.endDate);
-  const isSameDate = startDate.toDateString() === endDate.toDateString();
+  const { date, time } = formatEventRange(event.startDate, event.endDate);
 
   return (
     <main className="bg-slate-50">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-10 p-5 py-30 items-start">
         {/* Main Content Section */}
-        <section>
+        <section className="space-y-6">
           {/* Event Image */}
           <div className="relative bg-sky-100 h-[400px] mb-5 rounded-2xl overflow-hidden border-10 border-white shadow-md">
             <div className="absolute z-10 text-white p-5">
@@ -148,30 +159,14 @@ export default function EventDetailPage({
                   <MdOutlineDateRange size={22} />
                 </div>
                 <div>
-                  <h3 className="text-sm">Date</h3>
+                  <h3 className="text-sm">Date & Time</h3>
                   <span className="font-semibold text-sm">
-                    {isSameDate ? (
-                      // OPTION 1: Dates are the same (Show only Full Date)
-                      endDate.toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })
-                    ) : (
-                      // OPTION 2: Dates are different (Show Range)
-                      <>
-                        {startDate.toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                        })}
-                        {" - "}
-                        {endDate.toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </>
-                    )}
+                    <div className="flex flex-col">
+                      <span className="text-gray-900">{date}</span>
+                      <span className="text-gray-500 font-normal mt-0.5">
+                        {time}
+                      </span>
+                    </div>
                   </span>
                 </div>
               </div>
@@ -268,6 +263,8 @@ export default function EventDetailPage({
               </Link>
             </div>
           </div>
+          {/* Review Section */}
+          <ReviewSection eventId={event.id} />
         </section>
 
         {/* Ticketing Section - Now a Separate Component */}
@@ -276,9 +273,6 @@ export default function EventDetailPage({
           eventId={event.id}
           organizerId={event.organizerId}
         />
-
-        {/* Review Section */}
-        <ReviewSection eventId={event.id} />
       </div>
     </main>
   );

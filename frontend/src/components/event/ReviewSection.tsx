@@ -15,11 +15,11 @@ interface User {
 }
 
 interface Review {
-    id: string;
-    user: User;
-    rating: number;
-    createdAt: string;
-    comment: string;
+  id: string;
+  user: User;
+  rating: number;
+  createdAt: string;
+  comment: string;
 }
 
 interface ReviewsResponse {
@@ -27,7 +27,7 @@ interface ReviewsResponse {
 }
 
 interface ReviewSectionProps {
-    eventId: string;
+  eventId: string;
 }
 
 const getReview = async (eventId: string): Promise<ReviewsResponse | null> => {
@@ -254,5 +254,73 @@ export default function ReviewSection({ eventId }: ReviewSectionProps) {
                 </div>
             )}
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-md mt-6">
+      {/* Create Review Form */}
+      <CreateReviewForm eventId={eventId} />
+      {/* ------------------ */}
+
+      <h2 className="text-xl font-bold text-gray-900 mb-6">
+        Reviews ({reviewsData.data.length})
+      </h2>
+
+      <div className="space-y-6">
+        {reviewsData.data.map((review) => (
+          <div
+            key={review.id}
+            className="border-b border-gray-100 last:border-0 pb-6 last:pb-0"
+          >
+            <div className="flex items-start gap-4">
+              {/* Avatar */}
+              <div className="relative w-10 h-10 shrink-0 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
+                {review.user?.avatarUrl ? (
+                  <Image
+                    src={review.user.avatarUrl}
+                    alt={review.user.name}
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="font-bold text-slate-400 text-sm">
+                    {review.user?.name?.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1">
+                <div className="flex justify-between items-start mb-1">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      {review.user.name}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {new Date(review.createdAt).toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "numeric",
+                        hour12: false,
+                      })}
+                    </p>
+                  </div>
+                  {renderStars(review.rating)}
+                </div>
+
+                <p className="text-gray-600 text-sm leading-relaxed mt-2">
+                  {review.comment}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

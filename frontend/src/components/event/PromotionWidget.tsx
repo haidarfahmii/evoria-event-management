@@ -141,7 +141,8 @@ export default function PromotionWidget({
       console.log(`   Price per ticket: Rp ${originalPrice.toLocaleString()}`);
       console.log(`   Total Price: Rp ${totalPrice.toLocaleString()}`);
       console.log(
-        `   Discount (${foundPromo.value}${foundPromo.type === "PERCENTAGE" ? "%" : ""
+        `   Discount (${foundPromo.value}${
+          foundPromo.type === "PERCENTAGE" ? "%" : ""
         }): Rp ${calculatedDiscount.toLocaleString()}`
       );
       console.log(
@@ -189,10 +190,10 @@ export default function PromotionWidget({
                 {appliedPromo.type === "PERCENTAGE"
                   ? `${appliedPromo.value}% OFF`
                   : `- ${new Intl.NumberFormat("id-ID", {
-                    style: "currency",
-                    currency: "IDR",
-                    maximumFractionDigits: 0,
-                  }).format(appliedPromo.value)}`}
+                      style: "currency",
+                      currency: "IDR",
+                      maximumFractionDigits: 0,
+                    }).format(appliedPromo.value)}`}
               </span>
             </div>
           </div>
@@ -239,7 +240,7 @@ export default function PromotionWidget({
       )}
 
       <p className="text-[10px] text-gray-400 mt-1">
-        💡 Satu akun hanya bisa membeli tiket 1x per event
+        💡 One account can only purchase 1x ticket per event.
       </p>
     </div>
   );

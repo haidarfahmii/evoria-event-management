@@ -78,5 +78,3 @@ export function TabNavigation({
     </div>
   );
 }
-
-// HAPUS BARIS INI: export type { Tab };
