@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ProfileData, Gender } from "@/@types";
 import { cn } from "@/lib/utils";
-import UnderlinedInput from "@/utils/UnderlinedInput";
+import UnderlinedInput from "@/components/ui/UnderlinedInput";
 
 interface ProfileFormProps {
   user: ProfileData | null;

@@ -3,6 +3,7 @@ import { loginValidationSchema } from "../schemas/authValidationSchema";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "react-toastify";
 
 export default function useFormLogin() {
   const router = useRouter();
@@ -30,7 +31,9 @@ export default function useFormLogin() {
       if (res?.error) {
         setErrorMsg(res.error);
         setIsLoading(false);
+        toast.error("Login Gagal: " + res.error);
       } else {
+        toast.success("Login Berhasil! Mengalihkan...");
         // ambil session terbaru untuk cek role
         const session = await getSession();
 

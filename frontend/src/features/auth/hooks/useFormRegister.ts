@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authService } from "../services/auth.service";
 import { Role } from "@/@types";
+import { toast } from "react-toastify";
 
 export default function useFormRegister() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function useFormRegister() {
         // kirim data yang dibutuhkan backend (name, email, password, referralCode)
         await authService.register(payload);
 
-        alert("Registration successful! Please login.");
+        toast.success("Registration successful! Please login.");
         router.push("/login");
       } catch (error: any) {
         setErrorMsg(error.response?.data?.message || "Registration failed");

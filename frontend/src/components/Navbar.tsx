@@ -72,7 +72,7 @@ export default function Navbar() {
             </Link>
 
             {/* Search Bar */}
-            <div className="hidden md:flex flex-1 max-w-md relative">
+            {/* <div className="hidden md:flex flex-1 max-w-md relative">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <Input
@@ -81,7 +81,7 @@ export default function Navbar() {
                   className="w-full pl-10 bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-400 focus-visible:ring-blue-500 rounded-full h-10"
                 />
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* --- BAGIAN KANAN: Menu & Auth --- */}

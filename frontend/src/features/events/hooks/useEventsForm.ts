@@ -4,6 +4,7 @@ import { Form, useFormik } from "formik";
 import { useRouter } from "next/navigation";
 import { eventFormValidationSchema } from "../schemas/eventsSchema";
 import axiosInstance from "@/utils/axiosInstance";
+import { toast } from "react-toastify";
 
 interface TicketType {
   id: number;
@@ -106,7 +107,7 @@ export default function useEventsForm() {
         });
         // Add your API call here
         await axiosInstance.post("/events", formData);
-        alert("Create Event Successfully");
+        toast.success("Create Event Successfully");
         router.push("/member/events");
       } catch (error) {
         console.error(error);
