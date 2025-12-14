@@ -40,7 +40,7 @@ export default function TicketingSection({
   organizerId,
 }: TicketingSectionProps) {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -155,6 +155,21 @@ export default function TicketingSection({
   const isOwner = session?.user?.id === organizerId;
 
   const handleCheckout = async () => {
+    // Cek Status Login Terlebih Dahulu
+    if (status === "unauthenticated" || !session) {
+      toast.info("Silakan login terlebih dahulu untuk memesan tiket.", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+
+      // Redirect ke login dengan membawa 'callbackUrl' agar setelah login balik ke halaman event ini
+      // Menggunakan encodeURIComponent agar URL aman
+      const currentUrl = window.location.href;
+
+      router.push(`/login?callbackUrl=${encodeURIComponent(currentUrl)}`);
+      return;
+    }
+
     // Prevent double submit
     if (isSubmitting) return;
 
@@ -182,7 +197,7 @@ export default function TicketingSection({
 
       // console.log("Sending payload:", payload);
 
-      // // 1. POST ke API
+      // // POST ke API
       const response = await axiosInstance.post(`/transactions`, payload);
       toast.success("Successfully Buy Ticket");
       router.push("/member/tiket-saya");
@@ -210,7 +225,7 @@ export default function TicketingSection({
         </div>
 
         <div className="p-5 space-y-6">
-          {/* 1. Ticket Type Selection */}
+          {/* Ticket Type Selection */}
           <div className="space-y-3">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Ticket Category
@@ -273,7 +288,7 @@ export default function TicketingSection({
             </div>
           </div>
 
-          {/* 2. Quantity Selector */}
+          {/* Quantity Selector */}
           {!isSoldOut && (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
@@ -317,42 +332,60 @@ export default function TicketingSection({
           {/* Divider */}
           <hr className="border-dashed border-gray-200" />
 
-          {/* --- 3. Coupon & Promo Widget Section --- */}
+          {/* Coupon & Promo Widget Section */}
 
           {selectedTicket.price > 0 && !isSoldOut && (
             <>
-              {/* Coupon Widget */}
-              <CouponWidget
-                key={`coupon-${selectedTicketId}`}
-                originalPrice={selectedTicket.price} // Pass price per ticket (bukan basePrice)
-                qty={quantity}
-                onApplyCoupon={handleApplyCoupon}
-                onRemoveCoupon={handleRemoveCoupon}
-              />
+              {/* HANYA RENDER JIKA ADA SESSION (USER LOGIN) */}
+              {session ? (
+                <>
+                  {/* Coupon Widget */}
+                  <CouponWidget
+                    key={`coupon-${selectedTicketId}`}
+                    originalPrice={selectedTicket.price}
+                    qty={quantity}
+                    onApplyCoupon={handleApplyCoupon}
+                    onRemoveCoupon={handleRemoveCoupon}
+                  />
 
-              <hr className="border-dashed border-gray-200" />
+                  <hr className="border-dashed border-gray-200" />
 
-              {/* Promotion Widget - Updated dengan prop qty */}
-              <PromotionWidget
-                key={`promo-${selectedTicketId}-${quantity}`} // Key berubah saat qty berubah untuk force re-render
-                eventId={eventId}
-                originalPrice={selectedTicket.price} // Pass price per ticket (bukan basePrice)
-                qty={quantity} // Pass qty untuk perhitungan di widget
-                onApplyPromotion={handleApplyPromotion}
-                onRemovePromotion={handleRemovePromotion}
-              />
+                  {/* Promotion Widget */}
+                  <PromotionWidget
+                    key={`promo-${selectedTicketId}-${quantity}`}
+                    eventId={eventId}
+                    originalPrice={selectedTicket.price}
+                    qty={quantity}
+                    onApplyPromotion={handleApplyPromotion}
+                    onRemovePromotion={handleRemovePromotion}
+                  />
 
-              <hr className="border-dashed border-gray-200" />
+                  <hr className="border-dashed border-gray-200" />
 
-              {/* Point Widget */}
-              <PointWidget
-                originalPrice={Math.max(0, currentPrice)} // Pass sisa tagihan setelah promo & coupon
-                onApplyPoints={handleApplyPoints}
-              />
+                  {/* Point Widget */}
+                  <PointWidget
+                    originalPrice={Math.max(0, currentPrice)}
+                    onApplyPoints={handleApplyPoints}
+                  />
+                </>
+              ) : (
+                /* Tampilkan pesan ajakan login */
+                <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-200">
+                  <p className="text-sm text-gray-600 mb-2">
+                    Punya poin atau kode promo?
+                  </p>
+                  <button
+                    onClick={() => router.push("/login")}
+                    className="text-blue-600 font-bold text-sm hover:underline"
+                  >
+                    Login untuk gunakan diskon
+                  </button>
+                </div>
+              )}
             </>
           )}
 
-          {/* 4. Price Summary & Checkout */}
+          {/* Price Summary & Checkout */}
           <div className="space-y-4">
             <div className="space-y-2">
               {/* Subtotal (jika ada diskon) */}
