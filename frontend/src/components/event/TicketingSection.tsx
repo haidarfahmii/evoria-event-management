@@ -1,15 +1,16 @@
 "use client";
 import { MdAdd, MdRemove, MdConfirmationNumber } from "react-icons/md";
+import { ImSpinner8 } from "react-icons/im";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import CouponWidget, { CouponResult } from "./CouponWidget";
 import PromotionWidget, { PromotionResult } from "./PromotionWidget";
 import PointWidget from "./PointWidget";
-import { useRouter } from "next/navigation";
 import axiosInstance from "@/utils/axiosInstance";
-import { ImSpinner8 } from "react-icons/im";
 import { toast } from "react-toastify";
 import { formatRupiah } from "@/utils/formatters";
+import LoginRequiredModal from "./LoginRequiredModal";
 
 interface TicketType {
   id: string;
@@ -40,9 +41,11 @@ export default function TicketingSection({
   organizerId,
 }: TicketingSectionProps) {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // State for ticket selection
   const [selectedTicketId, setSelectedTicketId] = useState<string>(
@@ -155,6 +158,12 @@ export default function TicketingSection({
   const isOwner = session?.user?.id === organizerId;
 
   const handleCheckout = async () => {
+    // Cek Status Login Terlebih Dahulu
+    if (status === "unauthenticated" || !session) {
+      setShowLoginModal(true);
+      return;
+    }
+
     // Prevent double submit
     if (isSubmitting) return;
 
@@ -182,7 +191,7 @@ export default function TicketingSection({
 
       // console.log("Sending payload:", payload);
 
-      // // 1. POST ke API
+      // // POST ke API
       const response = await axiosInstance.post(`/transactions`, payload);
       toast.success("Successfully Buy Ticket");
       router.push("/member/tiket-saya");
@@ -199,29 +208,38 @@ export default function TicketingSection({
   };
 
   return (
-    <section className="bg-sky-100 sticky top-10 rounded-2xl overflow-hidden">
-      <div className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
-        {/* Header */}
-        <div className="p-5 border-b border-gray-100 bg-gray-50/50">
-          <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-            <MdConfirmationNumber className="text-blue-600" />
-            Select Ticket
-          </h3>
-        </div>
+    <>
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        callbackUrl={
+          typeof window !== "undefined" ? window.location.href : undefined
+        }
+      />
 
-        <div className="p-5 space-y-6">
-          {/* 1. Ticket Type Selection */}
-          <div className="space-y-3">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Ticket Category
-            </label>
-            <div className="flex flex-col gap-3">
-              {ticketTypes.map((ticket) => (
-                <button
-                  key={ticket.id}
-                  onClick={() => handleTicketSelect(ticket.id)}
-                  disabled={ticket.seats === 0}
-                  className={`relative flex justify-between items-center p-4 rounded-xl border-2 text-left transition-all duration-200 group
+      <section className="bg-sky-100 sticky top-10 rounded-2xl overflow-hidden">
+        <div className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+          {/* Header */}
+          <div className="p-5 border-b border-gray-100 bg-gray-50/50">
+            <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+              <MdConfirmationNumber className="text-blue-600" />
+              Select Ticket
+            </h3>
+          </div>
+
+          <div className="p-5 space-y-6">
+            {/* Ticket Type Selection */}
+            <div className="space-y-3">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Ticket Category
+              </label>
+              <div className="flex flex-col gap-3">
+                {ticketTypes.map((ticket) => (
+                  <button
+                    key={ticket.id}
+                    onClick={() => handleTicketSelect(ticket.id)}
+                    disabled={ticket.seats === 0}
+                    className={`relative flex justify-between items-center p-4 rounded-xl border-2 text-left transition-all duration-200 group
                                 ${
                                   selectedTicketId === ticket.id
                                     ? "border-blue-600 bg-blue-50/30 ring-1 ring-blue-600"
@@ -233,205 +251,228 @@ export default function TicketingSection({
                                     : ""
                                 }
                                 `}
-                >
-                  <div>
-                    <span
-                      className={`font-bold block ${
-                        selectedTicketId === ticket.id
-                          ? "text-blue-700"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {ticket.name}
-                    </span>
-                    {ticket.seats > 0 ? (
+                  >
+                    <div>
                       <span
-                        className={`text-xs ${
-                          ticket.seats < 20
-                            ? "text-red-500 font-medium"
-                            : "text-gray-500"
+                        className={`font-bold block ${
+                          selectedTicketId === ticket.id
+                            ? "text-blue-700"
+                            : "text-gray-700"
                         }`}
                       >
-                        {ticket.seats} seats available
+                        {ticket.name}
                       </span>
-                    ) : (
-                      <span className="text-xs font-bold text-red-500">
-                        SOLD OUT
-                      </span>
+                      {ticket.seats > 0 ? (
+                        <span
+                          className={`text-xs ${
+                            ticket.seats < 20
+                              ? "text-red-500 font-medium"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {ticket.seats} seats available
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-red-500">
+                          SOLD OUT
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-bold text-gray-900">
+                      {ticket.price === 0 ? "FREE" : formatRupiah(ticket.price)}
+                    </div>
+
+                    {/* Active Indicator Dot */}
+                    {selectedTicketId === ticket.id && (
+                      <div className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-3 h-3 bg-blue-600 rounded-full border-2 border-white shadow-sm" />
                     )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quantity Selector */}
+            {!isSoldOut && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Quantity
+                  </label>
+                  {/* Validation Msg */}
+                  {quantity >= 3 ? (
+                    <span className="text-[10px] text-red-500 font-medium">
+                      Max 3 tickets per user
+                    </span>
+                  ) : quantity >= selectedTicket.seats ? (
+                    <span className="text-[10px] text-red-500 font-medium">
+                      Max seats reached
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="flex items-center justify-between bg-gray-50 p-2 rounded-xl border border-gray-200">
+                  <button
+                    onClick={() => handleQuantityChange("decrement")}
+                    disabled={quantity <= 1}
+                    className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                  >
+                    <MdRemove size={20} />
+                  </button>
+                  <span className="font-bold text-lg w-12 text-center text-gray-900">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => handleQuantityChange("increment")}
+                    disabled={quantity >= selectedTicket.seats || quantity >= 3}
+                    className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                  >
+                    <MdAdd size={20} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Divider */}
+            <hr className="border-dashed border-gray-200" />
+
+            {/* Coupon & Promo Widget Section */}
+
+            {selectedTicket.price > 0 && !isSoldOut && (
+              <>
+                {/* HANYA RENDER JIKA ADA SESSION (USER LOGIN) */}
+                {session ? (
+                  <>
+                    {/* Coupon Widget */}
+                    <CouponWidget
+                      key={`coupon-${selectedTicketId}`}
+                      originalPrice={selectedTicket.price}
+                      qty={quantity}
+                      onApplyCoupon={handleApplyCoupon}
+                      onRemoveCoupon={handleRemoveCoupon}
+                    />
+
+                    <hr className="border-dashed border-gray-200" />
+
+                    {/* Promotion Widget */}
+                    <PromotionWidget
+                      key={`promo-${selectedTicketId}-${quantity}`}
+                      eventId={eventId}
+                      originalPrice={selectedTicket.price}
+                      qty={quantity}
+                      onApplyPromotion={handleApplyPromotion}
+                      onRemovePromotion={handleRemovePromotion}
+                    />
+
+                    <hr className="border-dashed border-gray-200" />
+
+                    {/* Point Widget */}
+                    <PointWidget
+                      originalPrice={Math.max(0, currentPrice)}
+                      onApplyPoints={handleApplyPoints}
+                    />
+                  </>
+                ) : (
+                  /* Tampilkan pesan ajakan login */
+                  <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-200">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Punya poin atau kode promo?
+                    </p>
+                    <button
+                      onClick={() => router.push("/login")}
+                      className="text-blue-600 font-bold text-sm hover:underline"
+                    >
+                      Login untuk gunakan diskon
+                    </button>
                   </div>
-                  <div className="font-bold text-gray-900">
-                    {ticket.price === 0 ? "FREE" : formatRupiah(ticket.price)}
+                )}
+              </>
+            )}
+
+            {/* Price Summary & Checkout */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                {/* Subtotal (jika ada diskon) */}
+                {(discount > 0 || appliedPromotion || pointUsed > 0) && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Subtotal ({quantity}x tiket)</span>
+                    <span>{formatRupiah(basePrice)}</span>
                   </div>
+                )}
 
-                  {/* Active Indicator Dot */}
-                  {selectedTicketId === ticket.id && (
-                    <div className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-3 h-3 bg-blue-600 rounded-full border-2 border-white shadow-sm" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
+                {/* Promotion Discount */}
+                {appliedPromotion && (
+                  <div className="flex justify-between text-sm text-purple-600 font-medium">
+                    <span>
+                      Promo Discount ({appliedPromotion.promotionCode})
+                    </span>
+                    <span>
+                      - {formatRupiah(appliedPromotion.discountAmount)}
+                    </span>
+                  </div>
+                )}
 
-          {/* 2. Quantity Selector */}
-          {!isSoldOut && (
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Quantity
-                </label>
-                {/* Validation Msg */}
-                {quantity >= 3 ? (
-                  <span className="text-[10px] text-red-500 font-medium">
-                    Max 3 tickets per user
+                {/* Coupon Discount */}
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 font-medium">
+                    <span>Discount Coupon ({appliedCouponCode})</span>
+                    <span>- {formatRupiah(discount)}</span>
+                  </div>
+                )}
+
+                {/* Points Redeemed */}
+                {pointUsed > 0 && (
+                  <div className="flex justify-between text-sm text-amber-600 font-medium">
+                    <span>Points Used</span>
+                    <span>- {formatRupiah(pointUsed)}</span>
+                  </div>
+                )}
+
+                {/* Total Payment */}
+                <div className="flex justify-between items-end pt-3 border-t border-gray-200">
+                  <span className="text-sm text-gray-600 font-semibold">
+                    Total Payment
                   </span>
-                ) : quantity >= selectedTicket.seats ? (
-                  <span className="text-[10px] text-red-500 font-medium">
-                    Max seats reached
-                  </span>
-                ) : null}
+                  <div className="text-right">
+                    <span className="block text-2xl font-extrabold text-blue-600 leading-none">
+                      {totalPrice === 0 && selectedTicket.price === 0
+                        ? "FREE"
+                        : formatRupiah(totalPrice)}
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      Includes taxes & fees
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between bg-gray-50 p-2 rounded-xl border border-gray-200">
-                <button
-                  onClick={() => handleQuantityChange("decrement")}
-                  disabled={quantity <= 1}
-                  className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                >
-                  <MdRemove size={20} />
-                </button>
-                <span className="font-bold text-lg w-12 text-center text-gray-900">
-                  {quantity}
-                </span>
-                <button
-                  onClick={() => handleQuantityChange("increment")}
-                  disabled={quantity >= selectedTicket.seats || quantity >= 3}
-                  className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                >
-                  <MdAdd size={20} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Divider */}
-          <hr className="border-dashed border-gray-200" />
-
-          {/* --- 3. Coupon & Promo Widget Section --- */}
-
-          {selectedTicket.price > 0 && !isSoldOut && (
-            <>
-              {/* Coupon Widget */}
-              <CouponWidget
-                key={`coupon-${selectedTicketId}`}
-                originalPrice={selectedTicket.price} // Pass price per ticket (bukan basePrice)
-                qty={quantity}
-                onApplyCoupon={handleApplyCoupon}
-                onRemoveCoupon={handleRemoveCoupon}
-              />
-
-              <hr className="border-dashed border-gray-200" />
-
-              {/* Promotion Widget - Updated dengan prop qty */}
-              <PromotionWidget
-                key={`promo-${selectedTicketId}-${quantity}`} // Key berubah saat qty berubah untuk force re-render
-                eventId={eventId}
-                originalPrice={selectedTicket.price} // Pass price per ticket (bukan basePrice)
-                qty={quantity} // Pass qty untuk perhitungan di widget
-                onApplyPromotion={handleApplyPromotion}
-                onRemovePromotion={handleRemovePromotion}
-              />
-
-              <hr className="border-dashed border-gray-200" />
-
-              {/* Point Widget */}
-              <PointWidget
-                originalPrice={Math.max(0, currentPrice)} // Pass sisa tagihan setelah promo & coupon
-                onApplyPoints={handleApplyPoints}
-              />
-            </>
-          )}
-
-          {/* 4. Price Summary & Checkout */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              {/* Subtotal (jika ada diskon) */}
-              {(discount > 0 || appliedPromotion || pointUsed > 0) && (
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Subtotal ({quantity}x tiket)</span>
-                  <span>{formatRupiah(basePrice)}</span>
-                </div>
-              )}
-
-              {/* Promotion Discount */}
-              {appliedPromotion && (
-                <div className="flex justify-between text-sm text-purple-600 font-medium">
-                  <span>Promo Discount ({appliedPromotion.promotionCode})</span>
-                  <span>- {formatRupiah(appliedPromotion.discountAmount)}</span>
-                </div>
-              )}
-
-              {/* Coupon Discount */}
-              {discount > 0 && (
-                <div className="flex justify-between text-sm text-green-600 font-medium">
-                  <span>Discount Coupon ({appliedCouponCode})</span>
-                  <span>- {formatRupiah(discount)}</span>
-                </div>
-              )}
-
-              {/* Points Redeemed */}
-              {pointUsed > 0 && (
-                <div className="flex justify-between text-sm text-amber-600 font-medium">
-                  <span>Points Used</span>
-                  <span>- {formatRupiah(pointUsed)}</span>
-                </div>
-              )}
-
-              {/* Total Payment */}
-              <div className="flex justify-between items-end pt-3 border-t border-gray-200">
-                <span className="text-sm text-gray-600 font-semibold">
-                  Total Payment
-                </span>
-                <div className="text-right">
-                  <span className="block text-2xl font-extrabold text-blue-600 leading-none">
-                    {totalPrice === 0 && selectedTicket.price === 0
-                      ? "FREE"
-                      : formatRupiah(totalPrice)}
-                  </span>
-                  <span className="text-[10px] text-gray-400">
-                    Includes taxes & fees
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Checkout Button */}
-            <button
-              onClick={handleCheckout}
-              disabled={isSoldOut || isSubmitting || isOwner}
-              className={`w-full font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] 
+              {/* Checkout Button */}
+              <button
+                onClick={handleCheckout}
+                disabled={isSoldOut || isSubmitting || isOwner}
+                className={`w-full font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] 
                 ${
                   isSoldOut || isSubmitting || isOwner
                     ? "bg-gray-300 cursor-not-allowed shadow-none text-gray-500"
                     : "bg-blue-600 hover:bg-blue-700 hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] active:scale-[0.98] text-white"
                 } flex justify-center items-center gap-2`}
-            >
-              {isSubmitting ? (
-                <>
-                  <ImSpinner8 className="animate-spin text-xl" />
-                  Processing...
-                </>
-              ) : isOwner ? (
-                "You are the organizer"
-              ) : isSoldOut ? (
-                "Tickets Sold Out"
-              ) : (
-                "Book Tickets Now"
-              )}
-            </button>
+              >
+                {isSubmitting ? (
+                  <>
+                    <ImSpinner8 className="animate-spin text-xl" />
+                    Processing...
+                  </>
+                ) : isOwner ? (
+                  "You are the organizer"
+                ) : isSoldOut ? (
+                  "Tickets Sold Out"
+                ) : (
+                  "Book Tickets Now"
+                )}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

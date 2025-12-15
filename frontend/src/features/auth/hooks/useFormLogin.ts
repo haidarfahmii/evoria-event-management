@@ -1,11 +1,13 @@
 import { useFormik } from "formik";
 import { loginValidationSchema } from "../schemas/authValidationSchema";
 import { signIn, getSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "react-toastify";
 
 export default function useFormLogin() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
@@ -30,15 +32,22 @@ export default function useFormLogin() {
       if (res?.error) {
         setErrorMsg(res.error);
         setIsLoading(false);
+        toast.error("Login Gagal: " + res.error);
       } else {
         // ambil session terbaru untuk cek role
         const session = await getSession();
 
-        // cek role dan redirect sesuai hak aksesnya
-        if (session?.user?.role === "ORGANIZER") {
-          router.push("/member/dashboard");
+        const callbackUrl = searchParams.get("callbackUrl");
+        if (callbackUrl) {
+          // Jika ada callbackUrl, redirect kesana (untuk user yang dari event detail)
+          router.push(decodeURIComponent(callbackUrl));
         } else {
-          router.push("/");
+          // Jika tidak ada callbackUrl, gunakan default redirect berdasarkan role
+          if (session?.user?.role === "ORGANIZER") {
+            router.push("/member/dashboard");
+          } else {
+            router.push("/");
+          }
         }
       }
     },
