@@ -20,23 +20,31 @@ export default function HeroSection({
     const cities = citiesData.cities;
 
     return (
-        <section className="bg-blue-200">
-            <div className="max-w-6xl mx-auto flex flex-col gap-5 px-4 py-20">
+        <section className="relative bg-slate-900 text-white flex items-center">
+            <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
+                style={{
+                    backgroundImage:
+                        "url('https://images.pexels.com/photos/433452/pexels-photo-433452.jpeg')",
+                }}
+            ></div>
+
+            <div className="max-w-6xl mx-auto flex flex-col gap-5 px-4 py-20 z-10">
                 <h1 className="text-4xl font-bold">Discover Unforgettable Experiences</h1>
-                <h2 className="text-xl">
+                {/* Removed explicit text color here so it inherits text-white from parent */}
+                <h2 className="text-xl font-medium text-slate-200">
                     From music festivals in Bali to tech summits in Jakarta. Find your next adventure with Evoria.
                 </h2>
 
-                {/* Search Bar Container */}
-                <div className="bg-white p-2 rounded-2xl shadow-xl border border-slate-100 max-w-3xl flex flex-col md:flex-row gap-0 md:items-center relative z-10">
-
+                {/* Search Bar Container - Kept bg-white so the search bar pops out */}
+                <div className="bg-white text-slate-900 p-2 rounded-2xl shadow-xl border border-slate-100 max-w-3xl flex flex-col md:flex-row gap-0 md:items-center relative z-10 mt-6">
                     {/* 1. Search Input Section */}
                     <div className="flex-1 relative flex items-center group">
                         <FiSearch className="absolute left-4 text-slate-400 w-5 h-5 group-focus-within:text-blue-600 transition-colors" />
                         <Input
                             type="text"
                             placeholder="Search events, organizers..."
-                            className="w-full pl-11 pr-4 py-6 text-base border-0 shadow-none focus-visible:ring-0 placeholder:text-slate-400 bg-transparent rounded-xl"
+                            className="w-full pl-11 pr-4 py-6 text-base border-0 shadow-none focus-visible:ring-0 placeholder:text-slate-400 bg-transparent rounded-xl text-slate-900"
                             value={searchInput}
                             onChange={(e) => onSearchChange(e.target.value)}
                         />
@@ -66,8 +74,18 @@ export default function HeroSection({
 
                         {/* Custom Arrow Icon for Select */}
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                            <svg
+                                className="w-4 h-4 text-slate-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 9l-7 7-7-7"
+                                ></path>
                             </svg>
                         </div>
                     </div>
@@ -78,7 +96,6 @@ export default function HeroSection({
                             Find
                         </button>
                     </div>
-
                 </div>
             </div>
         </section>
