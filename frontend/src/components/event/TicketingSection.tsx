@@ -44,7 +44,6 @@ export default function TicketingSection({
   const { data: session, status } = useSession();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   // State for ticket selection
@@ -58,11 +57,17 @@ export default function TicketingSection({
   const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>("");
   const [appliedCouponId, setAppliedCouponId] = useState<string>("");
 
+  // State for Promotion
   const [appliedPromotion, setAppliedPromotion] =
     useState<PromotionResult | null>(null);
 
-  // State for point
+  // State for Point
   const [pointUsed, setPointUsed] = useState<number>(0);
+
+  // State keys to force reset child widgets on ticket change
+  const [couponKey, setCouponKey] = useState(0);
+  const [promoKey, setPromoKey] = useState(0);
+  const [pointKey, setPointKey] = useState(0);
 
   // Derived state
   const selectedTicket =
@@ -74,32 +79,32 @@ export default function TicketingSection({
   const basePrice = selectedTicket.price * quantity;
   let currentPrice = basePrice;
 
+  // Calculate Current Price
   if (appliedPromotion) {
     currentPrice -= appliedPromotion.discountAmount;
   }
-
-  // Apply coupon discount
   if (discount > 0) {
     currentPrice -= discount;
   }
-
-  // Apply points
   if (pointUsed > 0) {
     currentPrice -= pointUsed;
   }
 
-  // Final price tidak boleh negatif
   const totalPrice = Math.max(0, currentPrice);
   const isSoldOut = selectedTicket.seats === 0;
 
+  // --- Logic to check which method is active ---
+  const isCouponActive = discount > 0;
+  const isPromoActive = !!appliedPromotion;
+  const isPointActive = pointUsed > 0;
+
   // Auto-remove promotion saat qty berubah
-  // Ini mencegah bug: diskon tetap sama saat qty diubah
   useEffect(() => {
     if (appliedPromotion) {
       console.log("🔄 Qty changed in parent, removing promotion");
       handleRemovePromotion();
     }
-  }, [quantity]); // Dependency: quantity
+  }, [quantity]);
 
   // Handlers
   const handleQuantityChange = (type: "increment" | "decrement") => {
@@ -113,23 +118,23 @@ export default function TicketingSection({
   const handleTicketSelect = (id: string) => {
     setSelectedTicketId(id);
     setQuantity(1);
-    // Optional: Reset coupon when ticket type changes if rules apply
+
+    // Reset all methods when ticket type changes
     handleRemoveCoupon();
     handleRemovePromotion();
     setPointUsed(0);
+
+    // Force reset UI for all widgets
+    setCouponKey((prev) => prev + 1);
+    setPromoKey((prev) => prev + 1);
+    setPointKey((prev) => prev + 1);
   };
 
   // --- Coupon Handlers ---
   const handleApplyCoupon = (data: CouponResult) => {
-    console.log("✅ Coupon applied in parent:", data);
-    // 1. Set Discount dengan NOMINAL (Rupiah), bukan percentage lagi
-    // Karena Widget sudah menghitungnya menjadi rupiah di 'discountAmount'
+    console.log("✅ Coupon applied:", data);
     setDiscount(data.discountAmount);
-
-    // 2. Set Code untuk display
     setAppliedCouponCode(data.couponCode);
-
-    // 3. Set ID untuk dikirim ke backend nanti
     setAppliedCouponId(data.couponId);
   };
 
@@ -139,18 +144,17 @@ export default function TicketingSection({
     setAppliedCouponId("");
   };
 
-  // Promotion Handlers
+  // --- Promotion Handlers ---
   const handleApplyPromotion = (result: PromotionResult) => {
-    console.log("✅ Promotion applied in parent:", result);
+    console.log("✅ Promotion applied:", result);
     setAppliedPromotion(result);
   };
 
   const handleRemovePromotion = () => {
-    console.log("🗑️ Promotion removed in parent");
     setAppliedPromotion(null);
   };
 
-  // Handle Point
+  // --- Point Handlers ---
   const handleApplyPoints = (amount: number) => {
     setPointUsed(amount);
   };
@@ -158,47 +162,35 @@ export default function TicketingSection({
   const isOwner = session?.user?.id === organizerId;
 
   const handleCheckout = async () => {
-    // Cek Status Login Terlebih Dahulu
     if (status === "unauthenticated" || !session) {
       setShowLoginModal(true);
       return;
     }
-
-    // Prevent double submit
     if (isSubmitting) return;
 
     setIsSubmitting(true);
 
     try {
-      // Persiapan Payload
       const payload: CheckoutPayload = {
         eventId: eventId,
         ticketTypeId: selectedTicket.id,
         qty: quantity,
-        pointsUsed: pointUsed || 0, // Backend biasanya prefer number (0) daripada null untuk kalkulasi
-        totalPrice: totalPrice, // Opsional: Terkadang backend butuh ini untuk validasi selisih
+        pointsUsed: pointUsed || 0,
+        totalPrice: totalPrice,
       };
 
-      // Hanya masukkan key couponId ke dalam payload JIKA ada isinya (bukan string kosong)
       if (appliedCouponId) {
         payload.couponId = appliedCouponId;
       }
-
-      // Sama juga untuk promotionId
       if (appliedPromotion?.promotionId) {
         payload.promotionId = appliedPromotion.promotionId;
       }
 
-      // console.log("Sending payload:", payload);
-
-      // // POST ke API
-      const response = await axiosInstance.post(`/transactions`, payload);
+      await axiosInstance.post(`/transactions`, payload);
       toast.success("Successfully Buy Ticket");
       router.push("/member/tiket-saya");
     } catch (error: any) {
       console.error("Checkout Failed:", error);
-
-      // Tampilkan error (Bisa ganti pakai Toast / Alert)
       const errorMsg =
         error.response?.data?.message || "Terjadi kesalahan saat checkout.";
       toast.error(errorMsg);
@@ -240,35 +232,31 @@ export default function TicketingSection({
                     onClick={() => handleTicketSelect(ticket.id)}
                     disabled={ticket.seats === 0}
                     className={`relative flex justify-between items-center p-4 rounded-xl border-2 text-left transition-all duration-200 group
-                                ${
-                                  selectedTicketId === ticket.id
-                                    ? "border-blue-600 bg-blue-50/30 ring-1 ring-blue-600"
-                                    : "border-gray-100 hover:border-blue-300 bg-white"
-                                }
-                                ${
-                                  ticket.seats === 0
-                                    ? "opacity-50 cursor-not-allowed grayscale"
-                                    : ""
-                                }
+                                ${selectedTicketId === ticket.id
+                        ? "border-blue-600 bg-blue-50/30 ring-1 ring-blue-600"
+                        : "border-gray-100 hover:border-blue-300 bg-white"
+                      }
+                                ${ticket.seats === 0
+                        ? "opacity-50 cursor-not-allowed grayscale"
+                        : ""
+                      }
                                 `}
                   >
                     <div>
                       <span
-                        className={`font-bold block ${
-                          selectedTicketId === ticket.id
-                            ? "text-blue-700"
-                            : "text-gray-700"
-                        }`}
+                        className={`font-bold block ${selectedTicketId === ticket.id
+                          ? "text-blue-700"
+                          : "text-gray-700"
+                          }`}
                       >
                         {ticket.name}
                       </span>
                       {ticket.seats > 0 ? (
                         <span
-                          className={`text-xs ${
-                            ticket.seats < 20
-                              ? "text-red-500 font-medium"
-                              : "text-gray-500"
-                          }`}
+                          className={`text-xs ${ticket.seats < 20
+                            ? "text-red-500 font-medium"
+                            : "text-gray-500"
+                            }`}
                         >
                           {ticket.seats} seats available
                         </span>
@@ -282,7 +270,6 @@ export default function TicketingSection({
                       {ticket.price === 0 ? "FREE" : formatRupiah(ticket.price)}
                     </div>
 
-                    {/* Active Indicator Dot */}
                     {selectedTicketId === ticket.id && (
                       <div className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-3 h-3 bg-blue-600 rounded-full border-2 border-white shadow-sm" />
                     )}
@@ -298,7 +285,6 @@ export default function TicketingSection({
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     Quantity
                   </label>
-                  {/* Validation Msg */}
                   {quantity >= 3 ? (
                     <span className="text-[10px] text-red-500 font-medium">
                       Max 3 tickets per user
@@ -336,43 +322,62 @@ export default function TicketingSection({
             <hr className="border-dashed border-gray-200" />
 
             {/* Coupon & Promo Widget Section */}
-
             {selectedTicket.price > 0 && !isSoldOut && (
               <>
-                {/* HANYA RENDER JIKA ADA SESSION (USER LOGIN) */}
                 {session ? (
                   <>
-                    {/* Coupon Widget */}
-                    <CouponWidget
-                      key={`coupon-${selectedTicketId}`}
-                      originalPrice={selectedTicket.price}
-                      qty={quantity}
-                      onApplyCoupon={handleApplyCoupon}
-                      onRemoveCoupon={handleRemoveCoupon}
-                    />
+                    {/* Coupon Widget Wrapper */}
+                    <div
+                      className={`transition-all duration-300 ${isPromoActive || isPointActive
+                        ? "opacity-40 pointer-events-none grayscale blur-[0.5px]"
+                        : ""
+                        }`}
+                    >
+                      <CouponWidget
+                        key={`coupon-${selectedTicketId}-${couponKey}`}
+                        originalPrice={selectedTicket.price}
+                        qty={quantity}
+                        onApplyCoupon={handleApplyCoupon}
+                        onRemoveCoupon={handleRemoveCoupon}
+                      />
+                    </div>
 
                     <hr className="border-dashed border-gray-200" />
 
-                    {/* Promotion Widget */}
-                    <PromotionWidget
-                      key={`promo-${selectedTicketId}-${quantity}`}
-                      eventId={eventId}
-                      originalPrice={selectedTicket.price}
-                      qty={quantity}
-                      onApplyPromotion={handleApplyPromotion}
-                      onRemovePromotion={handleRemovePromotion}
-                    />
+                    {/* Promotion Widget Wrapper */}
+                    <div
+                      className={`transition-all duration-300 ${isCouponActive || isPointActive
+                        ? "opacity-40 pointer-events-none grayscale blur-[0.5px]"
+                        : ""
+                        }`}
+                    >
+                      <PromotionWidget
+                        key={`promo-${selectedTicketId}-${quantity}-${promoKey}`}
+                        eventId={eventId}
+                        originalPrice={selectedTicket.price}
+                        qty={quantity}
+                        onApplyPromotion={handleApplyPromotion}
+                        onRemovePromotion={handleRemovePromotion}
+                      />
+                    </div>
 
                     <hr className="border-dashed border-gray-200" />
 
-                    {/* Point Widget */}
-                    <PointWidget
-                      originalPrice={Math.max(0, currentPrice)}
-                      onApplyPoints={handleApplyPoints}
-                    />
+                    {/* Point Widget Wrapper */}
+                    <div
+                      className={`transition-all duration-300 ${isCouponActive || isPromoActive
+                        ? "opacity-40 pointer-events-none grayscale blur-[0.5px]"
+                        : ""
+                        }`}
+                    >
+                      <PointWidget
+                        key={`point-${selectedTicketId}-${pointKey}`}
+                        originalPrice={Math.max(0, currentPrice)}
+                        onApplyPoints={handleApplyPoints}
+                      />
+                    </div>
                   </>
                 ) : (
-                  /* Tampilkan pesan ajakan login */
                   <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-200">
                     <p className="text-sm text-gray-600 mb-2">
                       Punya poin atau kode promo?
@@ -391,7 +396,6 @@ export default function TicketingSection({
             {/* Price Summary & Checkout */}
             <div className="space-y-4">
               <div className="space-y-2">
-                {/* Subtotal (jika ada diskon) */}
                 {(discount > 0 || appliedPromotion || pointUsed > 0) && (
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Subtotal ({quantity}x tiket)</span>
@@ -450,11 +454,10 @@ export default function TicketingSection({
                 onClick={handleCheckout}
                 disabled={isSoldOut || isSubmitting || isOwner}
                 className={`w-full font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] 
-                ${
-                  isSoldOut || isSubmitting || isOwner
+                ${isSoldOut || isSubmitting || isOwner
                     ? "bg-gray-300 cursor-not-allowed shadow-none text-gray-500"
                     : "bg-blue-600 hover:bg-blue-700 hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] active:scale-[0.98] text-white"
-                } flex justify-center items-center gap-2`}
+                  } flex justify-center items-center gap-2`}
               >
                 {isSubmitting ? (
                   <>
