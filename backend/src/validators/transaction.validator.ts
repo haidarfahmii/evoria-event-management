@@ -34,6 +34,23 @@ export const createTransactionValidator = [
     .optional()
     .isString()
     .withMessage("Promotion ID must be a string"),
+
+  // Validasi hanya boleh pemakaian salah satu method discount
+  body().custom((value, { req }) => {
+    const { couponId, promotionId, pointsUsed } = req.body;
+
+    let discountMethodsCount = 0;
+
+    if (couponId) discountMethodsCount++;
+    if (promotionId) discountMethodsCount++;
+    if (pointsUsed && pointsUsed > 0) discountMethodsCount++;
+
+    if (discountMethodsCount > 1) {
+      throw new Error("You can only use one discount method (Coupon, Promotion, or Points) per transaction.");
+    }
+
+    return true;
+  }),
 ];
 
 export const transactionIdValidator = [
@@ -62,7 +79,7 @@ export const createPromotionValidator = [
     .withMessage("Code must be uppercase")
     .isAlphanumeric()
     .withMessage("Code must only contain letters and numbers")
-    .matches(/^(?=.*[A-Z])(?=.*[0-9])/) // Regex to ensure at least one letter and one number
+    .matches(/^(?=.*[A-Z])(?=.*[0-9])/) 
     .withMessage("Code must contain at least one letter and one number"),
 
   body("type")
