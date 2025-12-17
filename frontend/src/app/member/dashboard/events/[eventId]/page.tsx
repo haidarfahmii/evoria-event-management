@@ -79,11 +79,13 @@ export default function EventReportPage() {
   const [selectedTrx, setSelectedTrx] = useState<TransactionItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [rejectReason, setRejectReason] = useState<string>("");
+  const [isConfirmRejectOpen, setIsConfirmRejectOpen] =
+    useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   // --- Sync URL Effects ---
 
-  // Effect: Sync Search ke URL (Hanya jika di tab transactions)
+  // Sync Search ke URL (Hanya jika di tab transactions)
   useEffect(() => {
     if (
       activeTab === "transactions" &&
@@ -92,9 +94,9 @@ export default function EventReportPage() {
       setParams({ search: debouncedSearch, page: "1" });
       setCurrentPage(1);
     }
-  }, [debouncedSearch, activeTab]); // Hapus dependency getParam/setParams untuk hindari loop
+  }, [debouncedSearch, activeTab]);
 
-  // Effect: Handle Back/Forward Browser Navigation
+  // Handle Back/Forward Browser Navigation
   useEffect(() => {
     setSearchInput(urlSearch);
     setStatusFilter(urlStatus);
@@ -205,6 +207,7 @@ export default function EventReportPage() {
       }
 
       setIsModalOpen(false);
+      setIsConfirmRejectOpen(false);
       setRejectReason("");
       fetchData();
       fetchAttendees();
@@ -215,6 +218,18 @@ export default function EventReportPage() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const openConfirmReject = () => {
+    if (!rejectReason) {
+      toast.warning("Mohon sertakan alasan penolakan terlebih dahulu.");
+      return;
+    }
+    setIsConfirmRejectOpen(true);
+  };
+
+  const closeConfirmReject = () => {
+    setIsConfirmRejectOpen(false);
   };
 
   // Kalkulasi Ringkasan
@@ -518,8 +533,7 @@ export default function EventReportPage() {
               )}
             </div>
           ) : (
-            /* TAB ATTENDEES (Component Terpisah) */
-            /* Key ditambahkan agar component me-remount saat tab aktif, membaca URL baru yang sudah direset */
+            /* Tab Attendee */
             <AttendeeList
               key="attendees-tab"
               attendees={attendees}
@@ -613,7 +627,7 @@ export default function EventReportPage() {
               <Button
                 variant="outline"
                 className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
-                onClick={() => handleVerify("REJECT")}
+                onClick={openConfirmReject}
                 disabled={isProcessing}
               >
                 Tolak
@@ -626,6 +640,87 @@ export default function EventReportPage() {
                 {isProcessing ? "Memproses..." : "Terima Pembayaran"}
               </Button>
             </div>
+
+            {isConfirmRejectOpen && (
+              <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                <div className="bg-white w-full max-w-md rounded-xl shadow-2xl">
+                  {/* Header */}
+                  <div className="px-6 py-4 border-b bg-red-50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                      </div>
+                      <h3 className="font-bold text-lg">
+                        Konfirmasi Penolakan
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6">
+                    <p className="text-slate-600 mb-4">
+                      Apakah Anda yakin ingin menolak pembayaran ini?
+                    </p>
+
+                    {/* Detail Transaksi */}
+                    <div className="bg-slate-50 p-4 rounded-lg border space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Invoice ID:</span>
+                        <span className="font-mono font-medium">
+                          {selectedTrx?.invoiceId}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Pembeli:</span>
+                        <span className="font-medium">
+                          {selectedTrx?.userName}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Total:</span>
+                        <span className="font-semibold">
+                          {formatRupiah(selectedTrx?.finalPrice)}
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t">
+                        <span className="text-slate-500 text-sm">
+                          Alasan penolakan:
+                        </span>
+                        <p className="text-sm font-medium mt-1 bg-white p-2 rounded border">
+                          {rejectReason}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Warning */}
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-800">
+                        <strong>Perhatian:</strong> Tindakan ini tidak dapat
+                        dibatalkan.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={closeConfirmReject}
+                      disabled={isProcessing}
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => handleVerify("REJECT")}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? "Memproses..." : "Ya, Tolak Pembayaran"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
